@@ -1,0 +1,13 @@
+{
+  "admin:main.default"          : "Home",
+  "admin:category.default"      : "Categorieën",
+  "admin:contact.default"       : "Gebruikers",
+  "admin:content.default"       : "Teksten",
+  "admin:logentry.default"      : "Logboek",
+  "admin:product.default"       : "Producten",
+  "admin:securityrole.default"  : "Gebruikersrollen",
+  "admin:website.default"       : "Website",
+
+  "admin:main" : "Administrator",
+  "defaults-dateformat-small" : "dd mmmm ’yy"
+}

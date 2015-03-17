@@ -1,0 +1,27 @@
+.rowNr
+{
+  color: silver;
+  font-size: 10px;
+  text-align: right;
+}
+
+#website-logo
+{
+  max-height:30px;
+}
+
+#timer
+{
+  text-align: right;
+  position: fixed;
+  z-index: 100000;
+  bottom: 5px;
+  right: 5px;
+  font-size: 10px;
+  color: silver;
+}
+
+.navbar-collapse
+{
+  max-height: inherit !important;
+}
