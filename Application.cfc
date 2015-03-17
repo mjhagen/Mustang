@@ -223,7 +223,7 @@ component extends="thirdparty.framework.one"
       "nukescript"      = "populate.sql",
       "webroot"         = "",
       "reloadpw"        = "1",
-      "disableSecurity" = false
+      "disableSecurity" = true
     };
 
     var config = cacheGet( "config-#site#" );

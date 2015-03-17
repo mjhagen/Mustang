@@ -86,7 +86,10 @@
 
     <cfset var obj = getMetaData( this ) />
 
-    <cfif structKeyExists( obj, "extends" ) and not obj.extends.fullname eq 'WEB-INF.cftags.component'>
+    <cfif structKeyExists( obj, "extends" ) and 
+          not obj.extends.fullname eq 'WEB-INF.cftags.component' and 
+          not obj.extends.fullname eq 'railo.Component' and 
+          not obj.extends.fullname eq 'lucee.Component'>
       <cfset result = createObject( obj.extends.fullname ).getInheritedProperties( result ) />
     </cfif>
 
