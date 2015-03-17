@@ -84,7 +84,7 @@ component
       transaction
       {
         local.user.setLastLoginDate( now());
-        if( isInstanceOf( local.user, 'logged' ))
+        if( isInstanceOf( local.user, "base" ))
         {
           local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
           local.loginEvent = entityNew( "logentry", {

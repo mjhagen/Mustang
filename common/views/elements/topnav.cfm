@@ -15,7 +15,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand#( getSubsystem() eq 'home' )?' active':''#" href="#buildURL('home:')#">#i18n.translate( 'Home' )#</a>
+      <a class="navbar-brand#( getSubsystem() eq getDefaultSubsystem())?' active':''#" href="#buildURL(':main')#">#i18n.translate( 'Home' )#</a>
     </div>
 
     <cfif structKeyExists( rc, 'accountantnav' ) and arrayLen ( rc.accountantnav )>

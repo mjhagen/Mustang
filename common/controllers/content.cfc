@@ -74,7 +74,7 @@
             <cfset local.hide = false />
 
             <cfif fileExists( "#fw.mappings['/app']#/model/#local.entityName#.cfc" )>
-              <cfset local.entity = getMetaData( createObject( "app.model." & local.entityName )) />
+              <cfset local.entity = getMetaData( createObject( "model." & local.entityName )) />
               <cfset local.hide = structKeyExists( local.entity, "hide" ) />
             </cfif>
 

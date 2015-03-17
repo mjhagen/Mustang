@@ -77,7 +77,8 @@ component extends="thirdparty.framework.one"
     dbcreate = variables.reset ? ( variables.live ? "update" : "update" ) : ( variables.live ? "none" : "update" ),
     logSQL = variables.live ? false : true,
     sqlscript = request.context.config.nukescript,
-    savemapping = false
+    savemapping = false,
+    autogenmap = true
   };
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

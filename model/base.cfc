@@ -1,12 +1,24 @@
 <cfcomponent mappedSuperClass="true"
-             hide="true"
+
              cacheuse="transactional"
              defaultSort="sortorder"
+             hide="true"
 >
-  <cfproperty name="id"        fieldType="id" generator="uuid" />
-  <cfproperty name="deleted"   fieldType="column" ORMType="boolean" default="false" />
-  <cfproperty name="sortorder" fieldType="column" ORMType="integer" />
-  <cfproperty name="name"      fieldType="column" ORMType="string" length="128" />
+  <cfproperty name="id" fieldType="id" generator="uuid" />
+  <cfproperty name="deleted" ORMType="boolean" default="false" />
+  <cfproperty name="sortorder" ORMType="integer" />
+
+  <!--- <cfproperty fieldType="many-to-one" name="createContact" FKColumn="createcontactid" cfc="contact" /> --->
+  <cfproperty name="createDate" ORMType="timestamp" />
+  <cfproperty name="createIP"  length="15" />
+
+  <!--- <cfproperty fieldType="many-to-one" name="updateContact" FKColumn="updatecontactid" cfc="contact" /> --->
+  <cfproperty name="updateDate" ORMType="timestamp" />
+  <cfproperty name="updateIP"  length="15" />
+
+  <!--- <cfproperty name="log" singularName="logentry" fieldType="one-to-many" cfc="logentry" FKColumn="loggedid" orderby="createDate desc" cascade="delete-orphan" /> --->
+
+  <cfproperty name="name" length="128" />
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="init" access="public">
@@ -207,7 +219,7 @@
     <cfset var entityName         = this.getEntityName() />
     <cfset var CFCName            = meta.name />
     <cfset var properties         = getInheritedProperties() />
-    <cfset var canBeLogged        = isInstanceOf( this, 'logged' ) />
+    <cfset var canBeLogged        = isInstanceOf( this, "base" ) />
     <cfset var uuid               = createUUID() />
 
     <cfparam name="request.ormActions" default="#{}#" />

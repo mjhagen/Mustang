@@ -358,7 +358,7 @@
 
     <cfset rc.entityProperties = getMetaData( object ) />
 
-    <cfset rc.canBeLogged = isInstanceOf( object, 'logged' ) />
+    <cfset rc.canBeLogged = isInstanceOf( object, "base" ) />
 
     <cfif rc.entity eq "logentry">
       <cfset rc.canBeLogged = false />
