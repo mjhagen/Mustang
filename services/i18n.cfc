@@ -78,7 +78,12 @@
       </cfif>
     </cflock>
 
-    <cfreturn result />
+    <!--- replace {label} with whatever comes out of translate( 'label' ) --->
+    <cfloop array="#REMatchNoCase( "{[^}]+}", result )#" index="local.label">
+      <cfset result = replaceNoCase( result, local.label, translate( mid( local.label, 2, len( local.label ) - 2 ))) />
+    </cfloop>
+
+    <cfreturn request.context.util.CapFirst( result ) />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->

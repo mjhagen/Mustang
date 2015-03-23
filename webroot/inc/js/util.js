@@ -4,7 +4,7 @@ function translate( label )
   if( !( label in translations ))
   {
     // TODO: should be cached: (local storage?)
-    $.getJSON( ajaxUrl( 'api:i18n' , 'getTranslations' ), {}, function( response, state, e ){
+    $.getJSON( ajaxUrl( 'adminapi:i18n' , 'getTranslations' ), {}, function( response, state, e ){
       $( '.translate[data-label="' + label + '"]' ).html( response[label] );
       translations = response;
     });

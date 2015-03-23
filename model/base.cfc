@@ -291,8 +291,11 @@
     <cfloop collection="#properties#" item="key">
       <cfset property = properties[key] />
 
-      <cfif listFindNoCase( "log,createDate,createIP,createContact,updateDate,updateIP,updateContact,id", key ) or
-            not structKeyExists( property, "fieldtype" )>
+      <cfif not structKeyExists( property, "fieldtype" )>
+        <cfset property.fieldtype = "string" />
+      </cfif>
+      <cfif listFindNoCase( "log,createDate,createIP,createContact,updateDate,updateIP,updateContact,id", key )>
+        <cfoutput>Skipped #key#, default field.<br /></cfoutput>
         <cfcontinue />
       </cfif>
 
@@ -344,6 +347,8 @@
 
             <cfset local.workData = formdata[property.name] />
             <cfset structDelete( formdata, property.name ) />
+            <cfelse>
+              <cfoutput><br />Skipping #property.name#</cfoutput>
           </cfif>
 
           <!--- REMOVE --->

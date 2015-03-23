@@ -18,7 +18,7 @@
         <cfcontinue />
       </cfif>
       <li>
-        <a#( getSection() eq section )?' class="active"':''# href="#buildURL( subsystem & ':' & section )#">#i18n.translate(getSubsystem() & ':' & section & '.default' )#</a>
+        <a#( getSection() eq section )?' class="active"':''# href="#buildURL( subsystem & ':' & section )#">#i18n.translate( getSubsystem() & ':' & section & '.default' )#</a>
         <cfif isDefined( "rc.subsubnav" ) and 
               (
                 ( isSimpleValue( rc.subsubnav ) and len( trim( rc.subsubnav ))) or 

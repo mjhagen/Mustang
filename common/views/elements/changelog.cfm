@@ -60,7 +60,7 @@
               <strong>#i18n.translate( 'note' )#:</strong> #local.logentry.getNote()#<br />
             </cfif>
             <cfif len( trim( local.logentry.getAttachment()))>
-              <strong>#i18n.translate( 'attachment' )#:</strong> <a href="#buildURL( 'api:crud.download?filename=' & local.logentry.getAttachment() )#">#local.logentry.getAttachment()#</a><br />
+              <strong>#i18n.translate( 'attachment' )#:</strong> <a href="#buildURL( 'adminapi:crud.download?filename=' & local.logentry.getAttachment() )#">#local.logentry.getAttachment()#</a><br />
             </cfif>
           </p>
         </cfif>

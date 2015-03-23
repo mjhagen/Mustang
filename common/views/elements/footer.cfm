@@ -21,10 +21,6 @@
           | <span class="label label-success">Database Updated</span>
         </cfif>
         <br />Current FQA: <strong>#getfullyqualifiedaction()#</strong>
-        <br />Sites:
-        <cfloop array="#entityLoad( 'website' )#" index="local.website">
-          <a href="http://#local.website.getHostname()#" class="label label-#local.website.getHostname() eq cgi.server_name?'info':'default'#">#local.website.getName()#</a>
-        </cfloop>
         <br />Language:
         <cfloop array="#entityLoad( 'language' )#" index="language">
           <a class="label label-#rc.currentlanguageid eq language.getID()?'info':'default'#" href="#buildURL(getfullyqualifiedaction(),'?languageid=#language.getID()#')#">#language.getName()#</a>

@@ -171,12 +171,17 @@
     <cfset createSession() />
 
     <cflock scope="session" type="exclusive" timeout="30">
+      <cfset local.securityRole = local.user.getSecurityrole() />
+
       <!--- populate user object with DB data --->
       <cfset session.auth.isLoggedIn = true />
       <cfset session.auth.user = local.user />
       <cfset session.auth.userid = local.user.getID() />
-      <cfset session.auth.role = local.user.getSecurityrole() />
-      <cfset session.auth.canAccessAdmin = local.user.getSecurityrole().getCanAccessAdmin() />
+
+      <cfif not isNull( local.securityRole )>
+        <cfset session.auth.role = local.securityRole />
+        <cfset session.auth.canAccessAdmin = local.securityRole.getCanAccessAdmin() />
+      </cfif>
     </cflock>
 
     <cfreturn true />
@@ -365,6 +370,16 @@
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cfscript>
+    public string function capFirst( required word )
+    {
+      if( len( word ) lte 1 )
+      {
+        return uCase( word );
+      }
+
+      return uCase( left( word, 1 )) & lCase( right( word, len( word ) - 1 ));
+    }
+
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public any function jFloat( required string number )
     {

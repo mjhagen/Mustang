@@ -63,9 +63,9 @@
           local.column.data.ORMType eq "timestamp">
           #lsDateFormat( local.val, i18n.translate( 'defaults-dateformat-small' ))#<br />
           #lsTimeFormat( local.val, 'HH:mm:ss' )#
-        <cfelseif structKeyExists( local.column, "formfield" ) and
-                  local.column.formfield eq "file">
-          <a href="#buildURL( 'api:crud.download?filename=' & local.val )#">#local.val#</a>
+        <cfelseif structKeyExists( local.column.data, "formfield" ) and
+                  local.column.data.formfield eq "file">
+          <a href="#buildURL( 'adminapi:crud.download?filename=' & local.val )#">#local.val#</a>
         <cfelse>
           #replace( local.val, '#chr( 13 )##chr( 10 )#', '<br />', 'all' )#
         </cfif>

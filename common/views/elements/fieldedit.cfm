@@ -95,8 +95,8 @@
           <input #local.fieldAttributes# type="text" name="#local.formElementName#_tagsinput" value="#local.savedList#" data-source="#local.columnEntityName#"#structKeyExists( local.column, 'searchfields' )?' data-fields="#local.column.searchfields#"':''# />
         </div>
       <cfelse>
-	<!--- one-to-many autocomplete --->
-	<!--- TODO: complete this --->
+  	<!--- one-to-many autocomplete --->
+  	<!--- TODO: complete this --->
         <cfset local.savedObj = entityLoadByPK( "#local.columnEntityName#", local.column.saved ) />
         <cfif not isNull( local.savedObj )>
           <cfset local.column.saved = local.savedObj.getName() />
@@ -252,7 +252,7 @@
                   len( trim( local.column.saved ))>
               <cfset local.showUploadButton = false />
               <input type="hidden" name="#local.formElementName#" value="#local.column.saved#" />
-              <cfset local.column.saved = '<button type="button" class="close fileinput-remove">&times;</button><a href="' & buildURL( 'api:crud.download?filename=#local.column.saved#' ) & '">#local.column.saved#</a>' />
+              <cfset local.column.saved = '<button type="button" class="close fileinput-remove">&times;</button><a href="' & buildURL( 'adminapi:crud.download?filename=#local.column.saved#' ) & '">#local.column.saved#</a>' />
             <cfelse>
               <input type="hidden" name="#local.formElementName#" value="" />
               <cfset local.column.saved = "" />
@@ -272,6 +272,21 @@
           </div>
         </cfcase>
       </cfswitch>
+    <cfelseif (
+      structKeyExists( local.column, "dataType" ) and
+      local.column.dataType eq "json"
+    )
+    or
+    (
+      structKeyExists( local.column, "data" ) and
+      isStruct( local.column.data ) and
+      structKeyExists( local.column.data, "dataType" ) and
+      local.column.data.dataType eq "json"
+    )>
+      <div class="jsoneditorblock">
+        <div class="jsoncontainer" data-value="#toBase64( local.column.saved )#"></div>
+        <input type="hidden" name="#local.formElementName#" value="#htmlEditFormat( local.column.saved )#" />
+      </div>
     <cfelse>
       <cfset local.fieldAttributes &= ' class="form-control" name="#local.formElementName#"' />
       <cfparam name="local.column.saved" default="" />
@@ -307,7 +322,7 @@
                     <cfset local.validationURLAttributes["entityID"] = rc.data.getID() />
                   </cfif>
 
-                  <cfset local.fieldAttributes &= ' data-bv-remote="true" data-bv-remote-name="value" data-bv-remote-url="' & buildURL( action = 'api:crud.validate', queryString = local.validationURLAttributes ) & '"' />
+                  <cfset local.fieldAttributes &= ' data-bv-remote="true" data-bv-remote-name="value" data-bv-remote-url="' & buildURL( action = 'adminapi:crud.validate', queryString = local.validationURLAttributes ) & '"' />
                 </cfcase>
               </cfswitch>
             </cfif>

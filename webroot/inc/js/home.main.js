@@ -37,7 +37,7 @@ $(function() {
 
 function setFileupload( $input ){	
   $input.fileupload({
-      url         : ajaxUrl( 'api:crud' , 'upload'),
+      url         : ajaxUrl( 'adminapi:crud' , 'upload'),
       dataType    : 'json',
       add         : function( e, data ){
                       $( '.progress', $( this ).closest( 'div' )).show();

@@ -81,10 +81,11 @@ component
         fw.redirect( "#rc.origin#:security.login" );
       }
 
-      transaction
+      local.user.setLastLoginDate( now());
+
+      if( rc.config.log )
       {
-        local.user.setLastLoginDate( now());
-        if( isInstanceOf( local.user, "base" ))
+        transaction
         {
           local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
           local.loginEvent = entityNew( "logentry", {
@@ -146,7 +147,7 @@ component
       if( isDefined( "rc.auth.userid" ))
       {
         local.user = entityLoadByPK( "contact", rc.auth.userid );
-        if( not isNull( local.user ))
+        if( rc.config.log and not isNull( local.user ))
         {
           local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
           local.loginEvent = entityNew( "logentry", {

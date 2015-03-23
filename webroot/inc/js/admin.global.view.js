@@ -1,4 +1,4 @@
-var field, target, $modal, textareaEl, l;
+var field, target, $modal, textareaEl, l, _JSONeditor;
 var th_last = '';
 
 // Provide modal inline edit functionality:
@@ -18,13 +18,35 @@ $( window ).load( function(){
     relative_urls : false
   });
 
-  $( '.pick-a-color' ).pickAColor({
-    showHexInput            : true,
-    showAdvanced            : true,
-    inlineDropdown          : true,
-    showSavedColors         : false,
-    showBasicColors         : false
-  });
+  // JSON EDITOR:
+  var $container = $( '.jsoncontainer' );
+  if( $container.length )
+  {
+    _JSONeditor = new JSONEditor( $container[0], {
+      "modes"   : ["tree","text","form"], 
+      "change"  : function()
+                  {
+                    // update hidden field, for saving:
+                    $container.next( "input" ).val( _JSONeditor.getText());
+                  }
+    });
+
+    // init with saved json:
+    var sourceJSON = $container.data( "value" );
+    if( sourceJSON.length )
+    {
+      var json = JSON.parse( window.atob( sourceJSON ));
+      _JSONeditor.set( json );
+    }
+  }
+
+  // $( '.pick-a-color' ).pickAColor({
+  //   showHexInput            : true,
+  //   showAdvanced            : true,
+  //   inlineDropdown          : true,
+  //   showSavedColors         : false,
+  //   showBasicColors         : false
+  // });
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   $( "#mainform" ).bootstrapValidator({ live: "disabled" }).on( 'success.form.bv', function( e ){
@@ -79,7 +101,7 @@ $( window ).load( function(){
     var bloodhoundParams = {
       "datumTokenizer"  : Bloodhound.tokenizers.obj.whitespace( 'name' ),
       "queryTokenizer"  : Bloodhound.tokenizers.whitespace,
-      "remote"          : ajaxUrl( 'api:autocomplete' , 'typeahead' , [ ['entity', entity] , ['name','%QUERY']])
+      "remote"          : ajaxUrl( 'adminapi:autocomplete' , 'typeahead' , [ ['entity', entity] , ['name','%QUERY']])
     };
 
     if( $input.data( 'fields' ) != undefined )
@@ -104,7 +126,7 @@ $( window ).load( function(){
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   $( 'input[type=file]' ).fileupload({
     pasteZone   : null,
-    url         : ajaxUrl( 'api:crud' , 'upload'),
+    url         : ajaxUrl( 'adminapi:crud' , 'upload'),
     dataType    : 'json',
     add         : function( e, data ){
                     $( '.progress', $( this ).closest( 'div' )).show();
@@ -160,7 +182,7 @@ $( window ).load( function(){
       'show'  : true
     }).load( $( this ).attr( 'href' ), function( e ){
       $( 'input[type=file]', $( this )).fileupload({
-        url         : ajaxUrl( 'api:crud' , 'upload'),
+        url         : ajaxUrl( 'adminapi:crud' , 'upload'),
         dataType    : 'json',
         add         : function( e, data ){
                         $( '.progress', $( this ).closest( 'div' )).show();
@@ -221,7 +243,7 @@ $( window ).load( function(){
     $( '#inlineedit-result' ).append( '<input type="hidden" name="add_' + field + '" value=\'' + safe_tags_replace( stringyfiedDataToSave ) + '\' id="' + dataToSave.uuid + '" />' );
 
     // visual representation
-    $.ajax( ajaxUrl( 'api:crud' , 'displayInlineEditLine'), {
+    $.ajax( ajaxUrl( 'adminapi:crud' , 'displayInlineEditLine'), {
       data        : {
                       entityName : entity,
                       formdata : stringyfiedDataToSave

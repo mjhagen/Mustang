@@ -17,23 +17,18 @@
 
     <title>#local.title#</title>
 
-    <!--- layout: --->
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/bootstrap-theme.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/sb-admin-2.css" />
-    <link rel="stylesheet" href="/inc/plugins/font-awesome/css/font-awesome.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/metisMenu/metisMenu.min.css" />
-
-    <!--- plugins: --->
-    <link rel="stylesheet" href="/inc/plugins/ladda/ladda.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/validator/bootstrapValidator.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/slider/css/bootstrap-slider.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/themes/default/bootstrap.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/themes/default/sb-admin-2.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/ladda/ladda.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/validator/bootstrapValidator.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/slider/css/bootstrap-slider.min.css" />
     <link rel="stylesheet" href="/inc/plugins/tagsinput/bootstrap-tagsinput.css" />
     <link rel="stylesheet" href="/inc/plugins/tagsinput/typeahead.js-bootstrap.css" />
     <link rel="stylesheet" href="/inc/plugins/fileupload/jquery.fileupload.css" />
-    <link rel="stylesheet" href="/inc/plugins/jsoneditor/jsoneditor.min.css" />
+    <link rel="stylesheet" href="/inc/plugins/pick-a-color/css/pick-a-color-1.2.3.min.css">
 
-    <!--- user css: --->
+    <link rel="stylesheet" href="/inc/css/loading.css" />
     <link rel="stylesheet" href="/inc/css/default.css" />
     <link rel="stylesheet" href="/inc/css/admin.css" />
 
@@ -47,32 +42,36 @@
       </cfif>
     </script>
 
-    <!--- required for layout --->
     <script src="/inc/plugins/jquery/jquery-1.11.1.min.js"></script>
     <script src="/inc/plugins/jquery/jquery-ui.min.js"></script>
-    <script src="/inc/plugins/bootstrap/bootstrap.min.js"></script>
-    <script src="/inc/plugins/bootstrap/theme/sb-admin-2.js"></script>
-    <script src="/inc/plugins/metisMenu/metisMenu.min.js"></script>
 
-    <!--- plugins: --->
     <script src="/inc/plugins/jquery/jquery.cookie.js"></script>
     <script src="/inc/plugins/jquery/jquery.sortElements.js"></script>
     <script src="/inc/plugins/jquery/jquery.mask.js"></script>
     <script src="/inc/plugins/jquery/jquery.slimscroll.min.js"></script>
+
     <script src="/inc/plugins/tinymce/tinymce.min.js"></script>
     <script src="/inc/plugins/tinymce/jquery.tinymce.min.js"></script>
+
     <script src="/inc/plugins/fileupload/jquery.ui.widget.js"></script>
     <script src="/inc/plugins/fileupload/jquery.iframe-transport.js"></script>
     <script src="/inc/plugins/fileupload/jquery.fileupload.js"></script>
-    <script src="/inc/plugins/validator/bootstrapValidator.min.js"></script>
-    <script src="/inc/plugins/ladda/spin.min.js"></script>
-    <script src="/inc/plugins/ladda/ladda.min.js"></script>
-    <script src="/inc/plugins/ladda/ladda.jquery.min.js"></script>
+
+    <script src="/inc/plugins/bootstrap/bootstrap.min.js"></script>
+
+    <script src="/inc/plugins/bootstrap/validator/bootstrapValidator.min.js"></script>
+    <script src="/inc/plugins/bootstrap/themes/default/sb-admin-2.js"></script>
+    <script src="/inc/plugins/bootstrap/ladda/spin.min.js"></script>
+    <script src="/inc/plugins/bootstrap/ladda/ladda.min.js"></script>
+    <script src="/inc/plugins/bootstrap/ladda/ladda.jquery.min.js"></script>
+
+    <script src="/inc/plugins/bootstrap/slider/bootstrap-slider.min.js"></script>
+
     <script src="/inc/plugins/tagsinput/typeahead.bundle.min.js"></script>
     <script src="/inc/plugins/tagsinput/bootstrap-tagsinput.js"></script>
-    <script src="/inc/plugins/jsoneditor/jsoneditor.min.js"></script>
+    <script src="/inc/plugins/pick-a-color/js/tinycolor-0.9.15.min.js"></script>
+    <script src="/inc/plugins/pick-a-color/js/pick-a-color-1.2.3.min.js"></script>
 
-    <!--- user scripts: --->
     <script src="/inc/js/util.js"></script>
     <script src="/inc/js/default.js"></script>
     <script src="/inc/js/admin.js"></script>
@@ -93,15 +92,5 @@
       <script src="/inc/plugins/bootstrap/compatibility/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body data-spy="scroll" data-target="##side-nav">
-    <div id="wrapper">
-      #view("common:elements/topnav")#
-      <div id="page-wrapper">
-        <div class="container-fluid">
-          <div id="contentblock">#view('common:elements/standard',{body=body})#</div>
-          #view("common:elements/footer")#
-        </div>
-      </div>
-    </div>
-  </body>
+  <body>#body#</body>
 </html></cfoutput>

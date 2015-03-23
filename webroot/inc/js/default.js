@@ -20,7 +20,7 @@ $(function(){
 
     $( 'body' ).append( $modal );
 
-    $( '.modal-content' , $modal ).load(ajaxUrl( 'api:modal' , 'about'), function(){
+    $( '.modal-content' , $modal ).load(ajaxUrl( 'adminapi:modal' , 'about'), function(){
       $( 'button.btn-modal-close' , $modal ).click( function(){
         var $parent = $( this ).parents( '.modal' );
         removeModal( $parent );
@@ -59,26 +59,40 @@ function removeModal($modal){
   })
 };
 
-var seoAjax = false;
+function ajaxUrl( action, method, data )
+{
+  var seoAjax = false;
+  var returnURL = _webroot + "/";
 
-function ajaxUrl( action , method , data ){
-  var attributes = "";
-
-  if( seoAjax ){
-    if( data && data.length ){
-      for (var i = 0; i < data.length; i++) {
-        attributes += data[i][0] + "/" + data[i][1] + "/";
-      }
-    }
-    return _webroot + "/" + action + "/" + method + "/" + attributes;
+  if( seoAjax )
+  {
+    // return _webroot + "/" + action + "/" + method + "/" + data );
   }
-  else{
-    if( data && data.length ){
-      for (var i = 0; i < data.length; i++) {
-        attributes += "&" + data[i][0] + "=" + data[i][1];
+  else
+  {
+    returnURL += "index.cfm?action=";
+
+    if( action != undefined )
+    {
+      returnURL += action;
+    }
+
+    if( method != undefined )
+    {
+      returnURL += "." + method;
+    }
+
+    if( data != undefined )
+    {
+      var serializedData = $.param( data, true );
+
+      if( serializedData != undefined && serializedData.length )
+      {
+        returnURL += "&" + serializedData;
       }
     }
-    return _webroot + "/index.cfm?action=" + action + "." + method + attributes;
+
+    return returnURL;
   }
 }
 

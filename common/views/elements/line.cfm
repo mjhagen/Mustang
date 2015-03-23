@@ -45,8 +45,8 @@
     <cfif len( trim( local.lineactions ))>
       <td><div class="pull-right">
         <cfloop list="#local.lineactions#" index="local.action">
-          <cfif structKeyExists( local.entityProperties, "discriminatorValue" )>
-            <cfset local.entity = local.entityProperties.discriminatorValue />
+          <cfif structKeyExists( local.entityProperties, "fullname" )>
+            <cfset local.entity = listLast( local.entityProperties.fullname, '.' ) />
           </cfif>
           <cfset local.actionLink = buildURL( action = local.entity & local.action, queryString = { "#local.entity#id" = evaluate( 'local.data.getID()' )}) />
           <div class="btn-group"><a class="btn btn-xs btn-primary" href="#local.actionLink#">#i18n.translate( local.action )#</a></div>

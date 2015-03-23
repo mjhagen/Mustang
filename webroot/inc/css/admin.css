@@ -25,3 +25,9 @@
 {
   max-height: inherit !important;
 }
+
+.jsoncontainer
+{
+  height: 400px;
+  width: 100%;
+}

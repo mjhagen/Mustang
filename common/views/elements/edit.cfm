@@ -11,6 +11,10 @@
 <cfparam name="local.inline" default="#rc.inline#" />
 <cfparam name="local.canBeLogged" default="#rc.canBeLogged#" />
 
+<cfif local.modal>
+  <cfsetting showdebugoutput="false" />
+</cfif>
+
 <cfif not structKeyExists( local, "#local.entity#id" ) and structKeyExists( rc, "#local.entity#id" )>
   <cfset local["#local.entity#id"] = rc["#local.entity#id"] />
 </cfif>
@@ -31,6 +35,7 @@
       </cfif>
     </ul>
     <div class="tab-content">
+      <div class="whitespace"></div>
   </cfif>
 
   <div class="tab-pane active" id="form-#local.entity#">
@@ -199,19 +204,25 @@
           </cfif>
 
           <cfif local.data.hasProperty( 'createDate' ) and isDate( local.data.getCreateDate())>
-            <cfset local.creator = local.data.getCreateContact() />
             <small class="footnotes">
-              <cfif isDefined( "local.creator" )>
-                #i18n.translate('created-by')#: <a href="mailto:#local.creator.getEmail()#">#local.creator.getFullname()#</a>
-                #i18n.translate('on')#
+              #i18n.translate( 'created' )#: 
+              <cfif local.data.hasProperty( 'createContact' )>
+                <cfset local.creator = local.data.getCreateContact() />
+                <cfif isDefined( "local.creator" )>
+                  #i18n.translate('created-by')#: <a href="mailto:#local.creator.getEmail()#">#local.creator.getFullname()#</a>
+                  #i18n.translate('on')#
+                </cfif>
               </cfif>
               #lsDateFormat( local.data.getCreateDate(), i18n.translate( 'defaults-dateformat-small' ))# #i18n.translate('at')# #lsTimeFormat( local.data.getCreateDate(), 'HH:mm:ss' )#.
               <cfif isDate(local.data.getUpdateDate()) and dateDiff( 's', local.data.getCreateDate(), local.data.getUpdateDate()) gt 1>
-                <cfset local.updater = local.data.getUpdateContact() />
                 <br />
-                <cfif isDefined( "local.updater" )>
-                  #i18n.translate('updated-by')#: <a href="mailto:#local.updater.getEmail()#">#local.updater.getFullname()#</a>
-                  #i18n.translate('on')#
+                #i18n.translate( 'updated' )#: 
+                <cfif local.data.hasProperty( 'updateContact' )>
+                  <cfset local.updater = local.data.getUpdateContact() />
+                  <cfif isDefined( "local.updater" )>
+                    #i18n.translate('updated-by')#: <a href="mailto:#local.updater.getEmail()#">#local.updater.getFullname()#</a>
+                    #i18n.translate('on')#
+                  </cfif>
                 </cfif>
                 #lsDateFormat( local.data.getUpdateDate(), i18n.translate( 'defaults-dateformat-small' ))# #i18n.translate('at')# #lsTimeFormat( local.data.getUpdateDate(), 'HH:mm:ss' )#.
               </cfif>

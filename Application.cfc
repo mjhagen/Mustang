@@ -10,7 +10,7 @@ component extends="thirdparty.framework.one"
   request.context.config = getConfig( cgi.server_name );
   request.version = "1.0.0";
   request.webroot = request.context.config.webroot;
-  request.fileUploads = request.root & '../files_' & this.name;
+  request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
   request.adminNotCRUD = ["database"];
 
   // CF application setup:
@@ -224,7 +224,8 @@ component extends="thirdparty.framework.one"
       "nukescript"      = "populate.sql",
       "webroot"         = "",
       "reloadpw"        = "1",
-      "disableSecurity" = true
+      "disableSecurity" = true,
+      "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & this.name )
     };
 
     var config = cacheGet( "config-#site#" );
