@@ -1,4 +1,4 @@
-<cfparam name="local.tableview" default="common:elements/table" />
+<cfparam name="local.tableview" default="#rc.tableView#" />
 
 <cfset local.searchFields = [] />
 <cfset local.nonSortedIndex = 1000 />

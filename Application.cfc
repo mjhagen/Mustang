@@ -165,6 +165,15 @@ component extends="thirdparty.framework.one"
     {
       controller( 'admin:crud.#getItem()#' );
     }
+
+    if(
+        getSubsystem() eq "api" and
+        not arrayFindNoCase( request.adminNotCRUD, getSection()) and
+        not cachedFileExists( '../api/controllers/#getSection()#.cfc' )
+      )
+    {
+      controller( 'api:main.#getItem()#' );
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

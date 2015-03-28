@@ -2,7 +2,7 @@
   <cfprocessingdirective pageEncoding="utf-8" />
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="init" returntype="any" access="public" output="false">
+  <cffunction name="init" access="public" returntype="any" output="false">
     <cfargument name="fw" />
 
     <cfparam name="variables.listitems" default="" />
@@ -21,7 +21,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="before">
+  <cffunction name="before" access="public" output="false" returntype="void">
     <cfif fw.getItem() eq "edit" and
           not rc.auth.role.can( "change", fw.getSection())>
       <cfset session.alert = {
@@ -58,24 +58,30 @@
     <cfparam name="rc.showdeleted" default="0" />
     <cfparam name="rc.filters" default="#[]#" />
     <cfparam name="rc.filterType" default="contains" />
-    <cfparam name="rc.lineview" default="common:elements/line" />
     <cfparam name="rc.classColumn" default="" />
+    <cfparam name="rc.lineview" default="common:elements/line" />
+    <cfparam name="rc.tableView" default="common:elements/table" />
 
-    <cfset rc.fallbackView  = "common:elements/list" />
-  	<cfset rc.entity = variables.entity />
+    <cfparam name="rc.fallbackView" default="common:elements/list" />
 
-    <cfif fw.getSection() eq "main">
+    <!--- exit controller on non crud items --->
+    <cfswitch expression="#fw.getSection()#">
+      <cfcase value="main">
       <cfset var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' )) />
       <cfset fw.setView( 'admin:main.dashboard-' & dashboard )>
       <cfreturn />
-    </cfif>
-
-    <cfif fw.getSection() eq "profile">
+      </cfcase>
+      <cfcase value="profile">
       <cfset fw.setView( 'common:profile.default' )>
       <cfreturn />
-    </cfif>
+      </cfcase>
+    </cfswitch>
+
+    <!--- default crud behaviour continues: --->
+    <cfset rc.entity = variables.entity />
 
     <cfif not structKeyExists( ORMGetSessionFactory().getAllClassMetadata(), rc.entity )>
+      <!--- exit with error when trying to control a non-persisted entity --->
       <cfset session.alert = {
         "class" = "danger",
         "text"  = "not-an-entity-error"
@@ -102,6 +108,9 @@
     <cfset rc.showSearch    = variables.showSearch />
     <cfset rc.showAlphabet  = variables.showAlphabet />
     <cfset rc.showPager     = variables.showPager />
+    <cfif structKeyExists( entityProperties, "list" )>
+      <cfset rc.tableView  = "common:elements/" & entityProperties.list />
+    </cfif>
 
     <cfif not rc.auth.role.can( "change", rc.entity )>
       <cfset local.lineactionPointer = listFind( rc.lineactions, '.edit' ) />
@@ -305,12 +314,12 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="import">
+  <cffunction name="import" access="public" output="false" returntype="void">
     <cfset rc.fallbackView = "common:elements/import" />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="new">
+  <cffunction name="new" access="public" output="false" returntype="void">
     <cfif not rc.auth.role.can( "change", fw.getSection())>
       <cfset session.alert = {
         "class" = "danger",
@@ -322,13 +331,13 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="view">
+  <cffunction name="view" access="public" output="false" returntype="void">
     <cfset rc.editable = false />
     <cfreturn edit( rc = rc ) />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="edit">
+  <cffunction name="edit" access="public" output="false" returntype="void">
     <cfparam name="rc.modal" default="false" />
     <cfparam name="rc.editable" default="true" />
     <cfparam name="rc.inline" default="false" />
@@ -358,7 +367,7 @@
 
     <cfset rc.entityProperties = getMetaData( object ) />
 
-    <cfset rc.canBeLogged = isInstanceOf( object, "base" ) />
+    <cfset rc.canBeLogged = rc.config.log />
 
     <cfif rc.entity eq "logentry">
       <cfset rc.canBeLogged = false />
@@ -426,7 +435,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="delete">
+  <cffunction name="delete" access="public" output="false" returntype="void">
     <cfif not rc.auth.role.can( "delete", fw.getSection())>
       <cfset session.alert = {
         "class" = "danger",
@@ -450,7 +459,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="restore">
+  <cffunction name="restore" access="public" output="false" returntype="void">
     <cfset var entityToRestore = entityLoadByPK( "#variables.entity#", rc["#variables.entity#id"] ) />
     <cfif isDefined( "entityToRestore" )>
       <cfset entityToRestore.setDeleted( false ) />
@@ -466,7 +475,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="save">
+  <cffunction name="save" access="public" output="false" returntype="void">
     <cfargument name="rc" />
 
     <cfif structCount( form ) eq 0>
@@ -506,7 +515,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="upload">
+  <cffunction name="upload" access="public" output="false" returntype="void">
     <cfset var recordToImport = "" />
     <cfset var importedCSVFile = "" />
     <cfset var i = 0 />

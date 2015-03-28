@@ -8,15 +8,13 @@
   <cfproperty name="deleted" ORMType="boolean" default="false" />
   <cfproperty name="sortorder" ORMType="integer" />
 
-  <!--- <cfproperty fieldType="many-to-one" name="createContact" FKColumn="createcontactid" cfc="contact" /> --->
+  <cfproperty name="createContact" fieldType="many-to-one" FKColumn="createcontactid" cfc="contact" />
   <cfproperty name="createDate" ORMType="timestamp" />
   <cfproperty name="createIP"  length="15" />
 
-  <!--- <cfproperty fieldType="many-to-one" name="updateContact" FKColumn="updatecontactid" cfc="contact" /> --->
+  <cfproperty name="updateContact" fieldType="many-to-one" FKColumn="updatecontactid" cfc="contact" />
   <cfproperty name="updateDate" ORMType="timestamp" />
   <cfproperty name="updateIP"  length="15" />
-
-  <!--- <cfproperty name="log" singularName="logentry" fieldType="one-to-many" cfc="logentry" FKColumn="loggedid" orderby="createDate desc" cascade="delete-orphan" /> --->
 
   <cfproperty name="name" length="128" />
 
@@ -151,9 +149,9 @@
         <cfbreak />
       </cfif>
 
-      <cfset local.testCFC = createObject( "#cfc#" ) />
+      <cfset local.testCFC = createObject( cfc ) />
 
-      <cfif isInstanceOf( local.testCFC, "#field.cfc#" )>
+      <cfif isInstanceOf( local.testCFC, field.cfc )>
         <cfset fieldFound = true />
         <cfbreak />
       </cfif>
@@ -219,7 +217,7 @@
     <cfset var entityName         = this.getEntityName() />
     <cfset var CFCName            = meta.name />
     <cfset var properties         = getInheritedProperties() />
-    <cfset var canBeLogged        = isInstanceOf( this, "base" ) />
+    <cfset var canBeLogged        = request.context.config.log />
     <cfset var uuid               = createUUID() />
 
     <cfparam name="request.ormActions" default="#{}#" />
