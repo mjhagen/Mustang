@@ -48,7 +48,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="default">
+  <cffunction name="default" access="public" output="false" returntype="void">
     <cfparam name="rc.columns" default="#[]#" />
     <cfparam name="rc.offset" default="0" />
     <cfparam name="rc.maxResults" default="30" />
