@@ -3,14 +3,14 @@ component
   request.layout = false;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function init( fw )
+  public any function init( fw )
   {
     variables.fw = fw;
     return this;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function returnAsJSON( variable )
+  public string function returnAsJSON( variable )
   {
     var pageContext = getPageContext();
     var returnType = "application/json";
@@ -26,15 +26,6 @@ component
 
     pageContext.getFusionContext().getResponse().setHeader( "Content-Type", returnType );
     pageContext.getCfoutput().clearAll();
-    return serializeJSON( variable );
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function onMissingMethod( missingMethodName, missingMethodArguments )
-  {
-    writeDump( arguments );
-    abort;
-
-    return super.onMissingMethod();
+    writeOutput( serializeJSON( variable ));
   }
 }

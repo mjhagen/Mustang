@@ -90,6 +90,7 @@
     <cfargument name="rc" />
 
     <cfset request.layout = false />
+    <cfsetting showdebugoutput="false" />
 
     <cfparam name="rc.entityName" />
     <cfparam name="rc.formdata" />

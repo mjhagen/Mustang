@@ -3,7 +3,7 @@ var th_last = '';
 
 // Provide modal inline edit functionality:
 // Used for one-to-many fields where you can add/remove unique items to a record
-$( window ).load( function(){
+jQuery( document ).ready( function( e ){
   // TinyMCE Editor config:
   tinymce.init({
     selector  : "textarea",
@@ -23,7 +23,7 @@ $( window ).load( function(){
   if( $container.length )
   {
     _JSONeditor = new JSONEditor( $container[0], {
-      "modes"   : ["tree","text","form"], 
+      "modes"   : ["tree","text","form"],
       "change"  : function()
                   {
                     // update hidden field, for saving:

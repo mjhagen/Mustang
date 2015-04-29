@@ -37,7 +37,12 @@
 
     <cfset result = parseStringVariables( translation, stringVariables ) />
 
-    <cfreturn result />
+    <!--- replace {label} with whatever comes out of translate( 'label' ) --->
+    <cfloop array="#REMatchNoCase( '{[^}]+}', result )#" index="local.label">
+      <cfset result = replaceNoCase( result, local.label, translate( mid( local.label, 2, len( local.label ) - 2 ))) />
+    </cfloop>
+
+    <cfreturn request.context.util.capFirst( result ) />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -50,8 +55,11 @@
 
     <!--- SEARCH CACHE FOR LABEL: --->
     <cflock name="fw1_#application.applicationName#_translations_#languageid#" type="exclusive" timeout="30">
-      <cfif not reload and
-            structKeyExists( application, "translations" ) and
+      <cfif reload>
+        <cfset structDelete( application, "translations" ) />
+      </cfif>
+
+      <cfif structKeyExists( application, "translations" ) and
             structKeyExists( application.translations, languageid ) and
             structKeyExists( application.translations[languageid], label )>
         <cfreturn application.translations[languageid][label] />
@@ -65,8 +73,7 @@
         <cfset application.translations[languageid] = {} />
       </cfif>
 
-      <cfif not structKeyExists( application.translations[languageid], label ) or
-            reload>
+      <cfif not structKeyExists( application.translations[languageid], label )>
         <cfset local.lanStruct = deserializeJSON( fileRead( '#request.root#/i18n/#languageFileName#', 'utf-8' )) />
         <cfif structKeyExists( local.lanStruct, label )>
           <cfset application.translations[languageid][label] = local.lanStruct[label] />
@@ -78,12 +85,7 @@
       </cfif>
     </cflock>
 
-    <!--- replace {label} with whatever comes out of translate( 'label' ) --->
-    <cfloop array="#REMatchNoCase( "{[^}]+}", result )#" index="local.label">
-      <cfset result = replaceNoCase( result, local.label, translate( mid( local.label, 2, len( local.label ) - 2 ))) />
-    </cfloop>
-
-    <cfreturn request.context.util.CapFirst( result ) />
+    <cfreturn result />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->

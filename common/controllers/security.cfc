@@ -120,12 +120,7 @@ component
 
     if( not dontRedirect )
     {
-      if( local.user.getUsername() eq "admin" )
-      {
-        fw.redirect( "admin:" );
-      }
-
-      fw.redirect( "home:" );
+      fw.redirect( "admin:" );
     }
   }
 
@@ -166,7 +161,7 @@ component
         }
       }
 
-      fw.redirect( "home:security.login" );
+      fw.redirect( "common:security.login" );
     }
   }
 
@@ -219,14 +214,14 @@ component
         fw.redirect( 'security.login' );
       }
 
-      if( fw.getSubSystem() eq "admin" and not rc.auth.canAccessAdmin )
-      {
-        session.alert = {
-          "class" = "danger",
-          "text"  = "no-access-to-admin"
-        };
-        doLogout( rc = rc );
-      }
+      // if( fw.getSubSystem() eq "admin" and not rc.auth.canAccessAdmin )
+      // {
+      //   session.alert = {
+      //     "class" = "danger",
+      //     "text"  = "no-access-to-admin"
+      //   };
+      //   doLogout( rc = rc );
+      // }
     }
   }
 
@@ -240,7 +235,7 @@ component
     if( isDefined( 'rc.data' ))
     {
       local.authhash = toBase64( encrypt( rc.data.getID(), request.encryptKey ));
-      local.link = '<a href="http://#cgi.server_name##fw.buildURL( action = 'home:profile.password', queryString = { authhash = local.authhash })#">Klik hier</a>';
+      local.link = '<a href="http://#cgi.server_name##fw.buildURL( action = 'admin:profile.password', queryString = { authhash = local.authhash })#">Klik hier</a>';
       local.email = entityLoad( 'content', { fullyQualifiedAction = 'common:mail.activation' }, true );
       local.mailTo = rc.debug ? rc.config.ownerEmail : rc.data.getEmail();
 
@@ -258,7 +253,7 @@ component
         "class" = "success",
         "text"  = "email-send"
       };
-      fw.redirect( "home:security.login" );
+      fw.redirect( "common:security.login" );
     }
     else
     {
@@ -266,7 +261,7 @@ component
         "class" = "danger",
         "text"  = "email-not-found"
       };
-      fw.redirect( "home:security.retrieve" );
+      fw.redirect( "common:security.retrieve" );
     }
   }
 }

@@ -18,25 +18,11 @@
       <a class="navbar-brand#( getSubsystem() eq getDefaultSubsystem())?' active':''#" href="#buildURL(':main')#">#i18n.translate( 'Home' )#</a>
     </div>
 
-    <cfif structKeyExists( rc, 'accountantnav' ) and arrayLen ( rc.accountantnav )>
-      <ul class="nav navbar-top-links navbar-left">
-        <cfloop array="#rc.accountantnav#" index="local.item">
-          <li#( getSubsystem() eq 'accountant' and getItem() eq local.item )?' class="active"':''#><a href="#buildURL('home:accountant.#local.item[1]#')#">#i18n.translate( local.item[2] )#</a></li>
-        </cfloop>
-      </ul>
-		<cfelseif structKeyExists( rc, 'homenav' ) and arrayLen ( rc.homenav )>
-      <ul class="nav navbar-top-links navbar-left">
-        <cfloop array="#rc.homenav#" index="local.item">
-          <li#( getSubsystem() eq 'entrepreneur' and getItem() eq local.item )?' class="active"':''#><a href="#buildURL('home:entrepreneur.#local.item[1]#')#">#i18n.translate( local.item[2] )#</a></li>
-        </cfloop>
-      </ul>
-    <cfelseif len( trim( rc.topnav ))>
-      <ul class="nav navbar-top-links navbar-left">
-        <cfloop list="#rc.topnav#" index="local.section">
-          <li#( getSubsystem() eq 'home' and getSection() eq local.section )?' class="active"':''#><a href="#buildURL('home:#local.section#.default')#">#i18n.translate( local.section )#</a></li>
-        </cfloop>
-      </ul>
-    </cfif>
+    <ul class="nav navbar-top-links navbar-left">
+      <cfloop list="#rc.topnav#" index="local.section">
+        <li#( getSubsystem() eq 'home' and getSection() eq local.section )?' class="active"':''#><a href="#buildURL('home:#local.section#.default')#">#i18n.translate( local.section )#</a></li>
+      </cfloop>
+    </ul>
 
     <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "userID" )>
       <ul class="nav navbar-top-links navbar-right">

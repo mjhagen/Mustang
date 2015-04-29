@@ -22,21 +22,20 @@
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="before" access="public" output="false" returntype="void">
-    <cfif fw.getItem() eq "edit" and
-          not rc.auth.role.can( "change", fw.getSection())>
+    <cfif fw.getItem() eq "edit" and not rc.auth.role.can( "change", fw.getSection())>
       <cfset session.alert = {
         "class" = "danger",
-        "text"  = "privileges-error"
+        "text"  = "privileges-error-1"
       } />
       <cfset fw.redirect( "admin:" ) />
     </cfif>
 
     <cfset session.alert = {
       "class" = "danger",
-      "text"  = "privileges-error"
+      "text"  = "privileges-error-2"
     } />
 
-    <cfif rc.auth.role.can( "view", fw.getSection())>
+    <cfif rc.auth.role.can( "view", fw.getSection()) or fw.getSection() eq "main">
       <cfset structDelete( session, "alert" ) />
     </cfif>
 
@@ -59,23 +58,23 @@
     <cfparam name="rc.filters" default="#[]#" />
     <cfparam name="rc.filterType" default="contains" />
     <cfparam name="rc.classColumn" default="" />
-    <cfparam name="rc.lineview" default="common:elements/line" />
-    <cfparam name="rc.tableView" default="common:elements/table" />
-
-    <cfparam name="rc.fallbackView" default="common:elements/list" />
 
     <!--- exit controller on non crud items --->
     <cfswitch expression="#fw.getSection()#">
       <cfcase value="main">
-      <cfset var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' )) />
-      <cfset fw.setView( 'admin:main.dashboard-' & dashboard )>
-      <cfreturn />
+        <cfset var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' )) />
+        <cfset fw.setView( 'admin:main.dashboard-' & dashboard )>
+        <cfreturn />
       </cfcase>
       <cfcase value="profile">
-      <cfset fw.setView( 'common:profile.default' )>
-      <cfreturn />
+        <cfset fw.setView( 'common:profile.default' )>
+        <cfreturn />
       </cfcase>
     </cfswitch>
+
+    <cfparam name="rc.lineView" default="common:elements/line" />
+    <cfparam name="rc.tableView" default="common:elements/table" />
+    <cfparam name="rc.fallbackView" default="common:elements/list" />
 
     <!--- default crud behaviour continues: --->
     <cfset rc.entity = variables.entity />
@@ -108,8 +107,17 @@
     <cfset rc.showSearch    = variables.showSearch />
     <cfset rc.showAlphabet  = variables.showAlphabet />
     <cfset rc.showPager     = variables.showPager />
+    <cfset rc.showAsTree    = false />
+
     <cfif structKeyExists( entityProperties, "list" )>
       <cfset rc.tableView  = "common:elements/" & entityProperties.list />
+
+      <cfif entityProperties.list eq "hierarchy">
+        <cfset rc.allColumns = {} />
+        <cfset rc.allData = [] />
+        <cfset rc.showAsTree = true />
+        <cfreturn />
+      </cfif>
     </cfif>
 
     <cfif not rc.auth.role.can( "change", rc.entity )>
@@ -174,25 +182,30 @@
           <cfset whereBlock &= " AND ( mainEntity.deleted IS NULL OR mainEntity.deleted = false ) " />
         </cfif>
 
-        <cfloop from="1" to="#arrayLen( rc.filters )#" index="local.filterIndex">
-          <cfif len( rc.filters[local.filterIndex].field ) gt 2 and right( rc.filters[local.filterIndex].field, 2 ) eq "id">
-            <cfset whereBlock &= "AND mainEntity.#left( rc.filters[local.filterIndex].field, len( rc.filters[local.filterIndex].field ) - 2 )# = ( FROM #left( rc.filters[local.filterIndex].field, len( rc.filters[local.filterIndex].field ) - 2 )# WHERE id = '#rc.filters[local.filterIndex].filterOn#' )" />
+        <cfloop array="#rc.filters#" index="filter">
+          <cfif len( filter.field ) gt 2 and right( filter.field, 2 ) eq "id">
+            <cfset whereBlock &= "AND mainEntity.#left( filter.field, len( filter.field ) - 2 )# = ( FROM #left( filter.field, len( filter.field ) - 2 )# WHERE id = '#filter.filterOn#' )" />
           <cfelse>
-            <cfif rc.filterType eq "contains">
-              <cfset rc.filters[local.filterIndex].filterOn = "%#rc.filters[local.filterIndex].filterOn#" />
-            </cfif>
-            <cfset rc.filters[local.filterIndex].filterOn = "#rc.filters[local.filterIndex].filterOn#%" />
+            <cfif filter.filterOn eq "NULL">
+              <cfset whereBlock &= " AND ( " />
+              <cfset whereBlock &= " mainEntity.#lCase( filter.field )# IS NULL " />
+            <cfelse>
+              <cfif rc.filterType eq "contains">
+                <cfset filter.filterOn = "%#filter.filterOn#" />
+              </cfif>
+              <cfset filter.filterOn = "#filter.filterOn#%" />
 
-            <cfset whereBlock &= " AND ( " />
-            <cfset whereBlock &= " mainEntity.#lCase( rc.filters[local.filterIndex].field )# LIKE '#rc.filters[local.filterIndex].filterOn#' " />
+              <cfset whereBlock &= " AND ( " />
+              <cfset whereBlock &= " mainEntity.#lCase( filter.field )# LIKE '#filter.filterOn#' " />
+            </cfif>
 
             <cfloop array="#alsoFilterKeys#" index="alsoFilterKey">
-              <cfif alsoFilterKey.owner.name neq rc.filters[local.filterIndex].field>
+              <cfif alsoFilterKey.owner.name neq filter.field>
                 <cfcontinue />
               </cfif>
               <cfset counter++ />
               <cfset alsoFilterEntity &= " LEFT JOIN mainEntity.#listFirst( alsoFilterKey.owner.alsoFilter, '.' )# AS entity_#counter# " />
-              <cfset whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#rc.filters[local.filterIndex].filterOn#' " />
+              <cfset whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#filter.filterOn#' " />
             </cfloop>
             <cfset whereBlock &= " ) " />
           </cfif>
@@ -413,7 +426,7 @@
       <cfset columnsinform[indexNr] = property />
       <cfset local.savedValue = evaluate( "rc.data.get#property.name#()" ) />
 
-      <cfif isDefined( "local.savedValue" )>
+      <cfif not isNull( local.savedValue )>
         <cfif isArray( local.savedValue )>
           <cfset local.savedValueList = "" />
           <cfloop array="#local.savedValue#" index="local.individualValue">
@@ -422,6 +435,8 @@
           <cfset local.savedValue = local.savedValueList />
         </cfif>
         <cfset columnsinform[indexNr].saved = local.savedValue />
+      <cfelseif structKeyExists( rc, property.name )>
+        <cfset columnsinform[indexNr].saved = rc[property.name] />
       <cfelse>
         <cfset columnsinform[indexNr].saved = "" />
       </cfif>

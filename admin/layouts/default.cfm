@@ -18,10 +18,20 @@
     <title>#local.title#</title>
 
     <!--- layout: --->
+
+<!---
     <link rel="stylesheet" href="/inc/plugins/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/bootstrap-theme.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/sb-admin-2.css" />
     <link rel="stylesheet" href="/inc/plugins/font-awesome/css/font-awesome.min.css" />
+ --->
+
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
+
+    <link rel="stylesheet" href="//www.fuelcdn.com/fuelux/3.6.3/css/fuelux.min.css" />
+
+    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/sb-admin-2.css" />
     <link rel="stylesheet" href="/inc/plugins/metisMenu/metisMenu.min.css" />
 
     <!--- plugins: --->
@@ -31,6 +41,7 @@
     <link rel="stylesheet" href="/inc/plugins/tagsinput/bootstrap-tagsinput.css" />
     <link rel="stylesheet" href="/inc/plugins/tagsinput/typeahead.js-bootstrap.css" />
     <link rel="stylesheet" href="/inc/plugins/fileupload/jquery.fileupload.css" />
+    <link rel="stylesheet" href="/inc/plugins/pick-a-color/css/pick-a-color-1.2.3.min.css" />
     <link rel="stylesheet" href="/inc/plugins/jsoneditor/jsoneditor.min.css" />
 
     <!--- user css: --->
@@ -41,16 +52,31 @@
 
     <script>
       var _webroot = '';
-      var _loggable = false;
+
+      <cfif structKeyExists( rc, "entity" )>
+        var _entity = "#rc.entity#";
+      </cfif>
+
       <cfif listFindNoCase( 'new,edit,view', getItem()) and getSection() neq 'logentry' and structKeyExists( rc, "canBeLogged" )>
-        _loggable = #rc.canBeLogged?'true':'false'#;
+        var _loggable = #rc.canBeLogged?'true':'false'#;
+      <cfelsE>
+        var _loggable = false;
       </cfif>
     </script>
 
     <!--- required for layout --->
+<!---
     <script src="/inc/plugins/jquery/jquery-1.11.1.min.js"></script>
     <script src="/inc/plugins/jquery/jquery-ui.min.js"></script>
     <script src="/inc/plugins/bootstrap/bootstrap.min.js"></script>
+ --->
+
+    <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <script src="//www.fuelcdn.com/fuelux/3.6.3/js/fuelux.min.js"></script>
+
     <script src="/inc/plugins/bootstrap/theme/sb-admin-2.js"></script>
     <script src="/inc/plugins/metisMenu/metisMenu.min.js"></script>
 
@@ -70,6 +96,7 @@
     <script src="/inc/plugins/ladda/ladda.jquery.min.js"></script>
     <script src="/inc/plugins/tagsinput/typeahead.bundle.min.js"></script>
     <script src="/inc/plugins/tagsinput/bootstrap-tagsinput.js"></script>
+    <script src="/inc/plugins/pick-a-color/js/pick-a-color-1.2.3.min.js"></script>
     <script src="/inc/plugins/jsoneditor/jsoneditor.min.js"></script>
 
     <!--- user scripts: --->

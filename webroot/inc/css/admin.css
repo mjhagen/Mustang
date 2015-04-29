@@ -31,3 +31,23 @@
   height: 400px;
   width: 100%;
 }
+
+.fuelux .tree
+{
+  border: 0;
+}
+
+.fuelux .tree .tree-branch .tree-branch-header .glyphicon-play
+{
+  font-size: 14px;
+}
+
+.fuelux .tree .actions
+{
+  cursor: pointer;
+}
+
+.fuelux .tree .tree-branch-header:hover
+{
+  background-color: #f5f5f5;
+}
