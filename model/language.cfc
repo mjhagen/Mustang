@@ -1,5 +1,5 @@
 component persistent="true"
-          extends="base"
+          extends="basecfc.base"
           hint="helper object containing languages (used for translating labels and content based on location)"
           cacheuse="read-only"
           hide="true"

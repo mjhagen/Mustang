@@ -1,4 +1,4 @@
-component extends="base" persistent="true" hide="true"
+component extends="basecfc.base" persistent="true" hide="true"
 {
   property name="section" fieldType="column" ORMType="string" type="string" length="32" inform="true" orderinform="1" editable="true" inlist="true" ininline="true" orderininline="1";
   property name="create" fieldType="column" ORMType="boolean" default="FALSE" inform="true" orderinform="2" editable="true" ininline="true" orderininline="2";

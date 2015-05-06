@@ -1,4 +1,4 @@
-component extends="base" persistent="true" cacheuse="read-only" hide="true"
+component extends="basecfc.base" persistent="true" cacheuse="read-only" hide="true"
 {
   property fieldType="column"  inform="true" orderinform="1" editable="true" inlist="true" name="name" type="string" ORMType="string" length="32";
   property fieldType="column"  inform="true" orderinform="2" editable="true" inlist="true" name="loginscript" type="string" ORMType="string" length="128";

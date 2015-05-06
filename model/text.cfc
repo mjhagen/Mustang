@@ -1,4 +1,4 @@
-component extends="base"
+component extends="basecfc.base"
           table="text"
           discriminatorColumn="type"
 

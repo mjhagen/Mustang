@@ -1,4 +1,4 @@
-component extends="base"
+component extends="basecfc.base"
           persistent="true"
 {
   property name="username" fieldType="column" ORMType="string" length="64" inform=true orderinform=1 editable=true inlist=true;

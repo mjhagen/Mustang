@@ -1,5 +1,5 @@
 component persistent="true"
-          extends="base"
+          extends="basecfc.base"
           hint="(for future development) helper object containing websites"
           hideDelete="true"
 {
