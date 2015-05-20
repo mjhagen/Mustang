@@ -4,7 +4,7 @@
   <cfset variables.languageFileName = "" />
 
   <cffunction name="init">
-    <cfargument name="locale" default="nl-NL" />
+    <cfargument name="locale" default="#request.context.config.defaultLanguage#" />
     <cfset variables.languageFileName = locale & ".json" />
     <cfreturn this />
   </cffunction>

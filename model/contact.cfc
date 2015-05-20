@@ -16,7 +16,7 @@ component extends="basecfc.base"
 
   property name="securityrole" fieldtype="many-to-one" cfc="securityrole" FKColumn="securityroleid" inform=true editable=true;
 
-  function getFullname()
+  public string function getFullname()
   {
     var result = getFirstname() & ' ' & trim( getInfix() & ' ' & getLastname());
 
@@ -28,7 +28,7 @@ component extends="basecfc.base"
     return result;
   }
 
-  function getName()
+  public string function getName()
   {
     return getFullname();
   }

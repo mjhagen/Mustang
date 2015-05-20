@@ -2,13 +2,14 @@ component extends="thirdparty.framework.one"
 {
   // defaults:
   variables.live = true;
-  variables.reset = false;
   variables.downForMaintenance = false;
 
   // globals:
-  request.root = getDirectoryFromPath( getCurrentTemplatePath());
-  request.context.config = getConfig( cgi.server_name );
+
   request.version = "1.0.0";
+  request.reset = false;
+  request.root = getDirectoryFromPath( getCurrentTemplatePath());
+  request.context.config = readConfigFile( cgi.server_name );
   request.webroot = request.context.config.webroot;
   request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
   request.adminNotCRUD = ["database"];
@@ -18,14 +19,11 @@ component extends="thirdparty.framework.one"
   this.setclientcookies = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
   this.mappings = {
-    "/app" = request.root,
+    "/#this.name#" = request.root,
     "/framework" = request.root & "/thirdparty/framework",
     "/javaloader" = request.root & "/thirdparty/javaloader",
     "/model" = request.root & "/model"
   };
-
-  // App specific globals
-  request.encryptKey = "";
 
   // framework settings:
   variables.framework = {
@@ -64,7 +62,7 @@ component extends="thirdparty.framework.one"
 
   if( structKeyExists( url, "nuke" ))
   {
-    variables.reset = structKeyExists( url, "reload" );
+    request.reset = structKeyExists( url, "reload" );
   }
 
   variables.live = request.context.config.appIsLive;
@@ -74,9 +72,10 @@ component extends="thirdparty.framework.one"
   this.ormEnabled = true;
   this.ormsettings = {
     CFCLocation = "/model",
-    dbcreate = variables.reset ? ( variables.live ? "update" : "update" ) : ( variables.live ? "none" : "update" ),
+    DBCreate = ( request.reset ? "update" : ( variables.live ? "none" : "update" )),
     logSQL = variables.live ? false : true,
     sqlscript = request.context.config.nukescript,
+    secondaryCacheEnabled = variables.live ? true : false,
     savemapping = false,
     autogenmap = true
   };
@@ -84,7 +83,7 @@ component extends="thirdparty.framework.one"
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public any function setupApplication()
   {
-    if( variables.reset )
+    if( request.reset )
     {
       ORMReload();
     }
@@ -92,9 +91,10 @@ component extends="thirdparty.framework.one"
     ORMEvictQueries();
     cacheRemove( arrayToList( cacheGetAllIds()));
 
-    application.i18n = new app.services.i18n( "nl-NL" );
-    application.util = new app.services.util();
-    application.designService = new app.services.design();
+    application.i18n = new services.i18n( request.context.config.defaultLanguage );
+    application.util = new services.util();
+
+    application.designService = new services.design();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -107,11 +107,14 @@ component extends="thirdparty.framework.one"
     {
       request.context.i18n = variables.i18n = application.i18n;
       request.context.util = variables.util = application.util;
+      request.context.JSONUtil = variables.JSONUtil = application.JSONUtil;
       request.context.designService = variables.designService = application.designService;
     }
 
+    variables.util.setCFSetting( "showdebugoutput", request.context.debug );
+
     // rate limiter:
-    util.limiter( 3, 100 );
+    variables.util.limiter( 10, 50, 5 );
 
     // alert messages:
     lock scope="session" timeout="5" type="readOnly"
@@ -217,10 +220,10 @@ component extends="thirdparty.framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function getConfig( site )
+  public any function readConfigFile( site )
   {
     // DEFAULT:
-    var settings = {
+    var defaultSettings = {
       "debugEmail"      = "bugs@mstng.info",
       "showDebug"       = false,
       "ownerEmail"      = "info@mstng.info",
@@ -234,13 +237,15 @@ component extends="thirdparty.framework.one"
       "webroot"         = "",
       "reloadpw"        = "1",
       "disableSecurity" = true,
-      "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & this.name )
+      "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & this.name ),
+      "defaultLanguage"   = "nl_NL",
+      "securedSubsystems" = ""
     };
 
-    var config = cacheGet( "config-#site#" );
+    var config = cacheGet( "config-#this.name#" );
 
     if( isNull( config ) or
-        structKeyExists( url, "reload" ) or
+        request.reset or
         (
           structKeyExists( config, "appIsLive" ) and
           not config.appIsLive
@@ -248,17 +253,17 @@ component extends="thirdparty.framework.one"
       )
     {
       config = deserializeJSON( fileRead( request.root & "/config/" & site & ".json" ));
-      cachePut( "config-#site#", config );
+      cachePut( "config-#this.name#", config );
     }
 
-    for( key in settings )
+    for( key in defaultSettings )
     {
       if( structKeyExists( config, key ))
       {
-        settings[key] = config[key];
+        defaultSettings[key] = config[key];
       }
     }
 
-    return settings;
+    return defaultSettings;
   }
 }

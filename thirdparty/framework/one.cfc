@@ -1,5 +1,5 @@
 component {
-    variables._fw1_version = "3.0_rc";
+    variables._fw1_version = "3.0.1";
 /*
     Copyright (c) 2009-2015, Sean Corfield, Marcin Szczepanski, Ryan Cogswell
 
@@ -17,21 +17,19 @@ component {
 */
 
     this.name = hash( getBaseTemplatePath() );
-    if ( len( getContextRoot() ) ) {
-        variables.cgiScriptName = replace( CGI.SCRIPT_NAME, getContextRoot(), '' );
-        variables.cgiPathInfo = replace( CGI.PATH_INFO, getContextRoot(), '' );
-    } else {
-        variables.cgiScriptName = CGI.SCRIPT_NAME;
-        variables.cgiPathInfo = CGI.PATH_INFO;
-    }
     request._fw1 = {
         cgiScriptName = CGI.SCRIPT_NAME,
+        cgiPathInfo = CGI.PATH_INFO,
         cgiRequestMethod = CGI.REQUEST_METHOD,
         controllers = [ ],
         requestDefaultsInitialized = false,
         doTrace = false,
         trace = [ ]
     };
+    if ( len( getContextRoot() ) ) {
+        request._fw1.cgiScriptName = replace( CGI.SCRIPT_NAME, getContextRoot(), '' );
+        request._fw1.cgiPathInfo = replace( CGI.PATH_INFO, getContextRoot(), '' );
+    }
     // do not rely on these, they are meant to be true magic...
     variables.magicApplicationSubsystem = '][';
     variables.magicApplicationController = '[]';
@@ -74,6 +72,7 @@ component {
      * to a resolvedBaseURL() value
      */
     public string function buildCustomURL( string uri ) {
+        uri = replace( uri, chr(92), '/', 'all' );
         var triggers = '[/=&\?]';
         if ( reFind( '#triggers#:', uri ) ) {
             // perform variables substitution from request.context
@@ -85,6 +84,11 @@ component {
             }
         }
         var baseData = resolveBaseURL();
+        if ( len( baseData.path ) && right( baseData.path, 1 ) == '/' &&
+             len( uri ) && left( uri, 1 ) == '/' ) {
+            if ( len( baseData.path ) == 1 ) baseData.path = '';
+            else baseData.path = left( baseData.path, len( baseData.path ) - 1 );
+        }
         return baseData.path & uri;
     }
 
@@ -339,6 +343,13 @@ component {
         return variables.framework.baseURL;
     }
 
+    /*
+     * returns the subsystem delimiter - so other parts of the application can
+     * build correct URLs.
+     */
+    public string function getSubsystemDelimiter() {
+        return variables.framework.subsystemDelimiter;
+    }
     /*
      *  returns whatever the framework has been told is a bean factory
      *  this will return a subsystem-specific bean factory if one
@@ -1352,7 +1363,7 @@ component {
     }
 
     private void function dumpException( any exception ) {
-        writeDump( var = exception, label = 'Exception - click to expand' );
+        writeDump( var = exception, label = 'Exception - click to expand', expand = false );
     }
 
     private void function ensureNewFrameworkStructsExist() {
@@ -1372,7 +1383,7 @@ component {
     private void function failure( any exception, string event, boolean indirect = false, boolean early = false ) {
         var h = indirect ? 3 : 1;
         if ( structKeyExists(exception, 'rootCause') ) {
-            exception = exception.rootCause;
+            // exception = exception.rootCause;
         }
         getPageContext().getResponse().setStatus( 500 );
         if ( early ) {
@@ -1903,7 +1914,7 @@ component {
                 omitIndex = true;
             }
         }
-        return { path = path, omitIndex = omitIndex };
+        return { path = replace( path, chr(92), '/', 'all' ), omitIndex = omitIndex };
     }
 
     private void function restoreFlashContext() {
@@ -2073,8 +2084,9 @@ component {
             variables.framework.action = 'action';
         }
         if ( !structKeyExists(variables.framework, 'base') ) {
-            variables.framework.base = getDirectoryFromPath( variables.cgiScriptName );
-        } else if ( right( variables.framework.base, 1 ) != '/' ) {
+            variables.framework.base = getDirectoryFromPath( request._fw1.cgiScriptName );
+        }
+        if ( right( variables.framework.base, 1 ) != '/' ) {
             variables.framework.base = variables.framework.base & '/';
         }
         variables.framework.base = replace( variables.framework.base, chr(92), '/', 'all' );
@@ -2248,7 +2260,7 @@ component {
 
     private void function setupRequestDefaults() {
         if ( !request._fw1.requestDefaultsInitialized ) {
-            var pathInfo = variables.cgiPathInfo;
+            var pathInfo = request._fw1.cgiPathInfo;
             request.base = variables.framework.base;
             request.cfcbase = variables.framework.cfcbase;
 
@@ -2256,10 +2268,10 @@ component {
                 request.context = { };
             }
             // SES URLs by popular request :)
-            if ( len( pathInfo ) > len( variables.cgiScriptName ) && left( pathInfo, len( variables.cgiScriptName ) ) == variables.cgiScriptName ) {
+            if ( len( pathInfo ) > len( request._fw1.cgiScriptName ) && left( pathInfo, len( request._fw1.cgiScriptName ) ) == request._fw1.cgiScriptName ) {
                 // canonicalize for IIS:
-                pathInfo = right( pathInfo, len( pathInfo ) - len( variables.cgiScriptName ) );
-            } else if ( len( pathInfo ) > 0 && pathInfo == left( variables.cgiScriptName, len( pathInfo ) ) ) {
+                pathInfo = right( pathInfo, len( pathInfo ) - len( request._fw1.cgiScriptName ) );
+            } else if ( len( pathInfo ) > 0 && pathInfo == left( request._fw1.cgiScriptName, len( pathInfo ) ) ) {
                 // pathInfo is bogus so ignore it:
                 pathInfo = '';
             }
@@ -2376,7 +2388,7 @@ component {
                         } else if ( len( relLoc ) > 1 && left( relLoc, 1 ) == "/" ) {
                             relLoc = right( relLoc, len( relLoc ) - 1 );
                         }
-                        subLocations = listAppend( subLocations, variables.framework.base & "/" & subsystem & "/" & relLoc );
+                        subLocations = listAppend( subLocations, variables.framework.base & subsystem & "/" & relLoc );
                     }
                     var ioc = new "#variables.framework.diComponent#"( subLocations );
                     ioc.setParent( getDefaultBeanFactory() );

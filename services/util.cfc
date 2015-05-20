@@ -47,35 +47,37 @@
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="limiter">
-    <cfargument name="duration" type="numeric" default=3>
-    <cfargument name="count" type="numeric" default=6>
-    <cfset var cacheId = "rate_limiter_" & CGI.REMOTE_ADDR>
-    <cfset var rate = cacheGet(cacheId)>
+    <cfargument name="duration" type="numeric" default="3" hint="Number of seconds to lock someone out after placing too many requests." />
+    <cfargument name="count" type="numeric" default="6" hint="Number of hits allowed within the time span set in the 'timespan' argument." />
+    <cfargument name="timespan" type="numeric" default="30" hint="Time span in which to clock the number of hits placed on the system." />
 
-    <cfif isNull(rate)>
-        <!--- Create cached object --->
-        <cfset cachePut(cacheID, {attempts = 1, start = Now()}, createTimeSpan(0,0,1,0))>
-    <cfelseif DateDiff("s", rate.start, Now()) LT arguments.duration>
-        <cfif rate.attempts gte arguments.count>
-            <cfoutput>
-                <p>You are making too many requests too fast,
-                please slow down and wait #arguments.duration# seconds</p>
-            </cfoutput>
-            <cfheader statuscode="503" statustext="Service Unavailable">
-            <cfheader name="Retry-After" value="#arguments.duration#">
-            <cflog file="limiter" text="#cgi.remote_addr# #rate.attempts# #cgi.request_method# #cgi.SCRIPT_NAME# #cgi.QUERY_STRING# #cgi.http_user_agent# #rate.start#">
-            <cfif rate.attempts is arguments.count>
-                <!--- Lock out for duration --->
-                <cfset cachePut(cacheID, {attempts = rate.attempts + 1, start = Now()}, createTimeSpan(0,0,1,0))>
-            </cfif>
-            <cfabort>
-        <cfelse>
-            <!--- Increment attempts --->
-            <cfset cachePut(cacheID, {attempts = rate.attempts + 1, start = rate.start}, createTimeSpan(0,0,1,0))>
+    <cfset var cacheId = "rate_limiter_" & CGI.REMOTE_ADDR />
+    <cfset var rate = cacheGet(cacheId) />
+    <cfset var cacheTime = createTimeSpan( 0, 0, 0, timespan ) />
+
+    <cfif isNull( rate )>
+      <!--- Create cached object --->
+      <cfset cachePut(cacheID, {attempts = 1, start = Now()}, cacheTime ) />
+    <cfelseif DateDiff("s", rate.start, Now()) LT duration>
+      <cfif rate.attempts gte count>
+        <cfoutput>
+          <p>You are making too many requests too fast, please slow down and wait #duration# seconds</p>
+        </cfoutput>
+        <cfheader statuscode="503" statustext="Service Unavailable" />
+        <cfheader name="Retry-After" value="#duration#" />
+        <cflog file="limiter" text="#cgi.remote_addr# #rate.attempts# #cgi.request_method# #cgi.SCRIPT_NAME# #cgi.QUERY_STRING# #cgi.http_user_agent# #rate.start#" />
+        <cfif rate.attempts is count>
+          <!--- Lock out for duration --->
+          <cfset cachePut(cacheID, {attempts = rate.attempts + 1, start = Now()}, cacheTime ) />
         </cfif>
+        <cfabort>
+      <cfelse>
+        <!--- Increment attempts --->
+        <cfset cachePut(cacheID, {attempts = rate.attempts + 1, start = rate.start}, cacheTime ) />
+      </cfif>
     <cfelse>
-        <!--- Reset attempts --->
-        <cfset cachePut(cacheID, {attempts = 1, start = Now()}, createTimeSpan(0,0,1,0))>
+      <!--- Reset attempts --->
+      <cfset cachePut(cacheID, {attempts = 1, start = Now()}, cacheTime ) />
     </cfif>
   </cffunction>
 
@@ -95,7 +97,7 @@
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="cmToPoints" returntype="numeric" access="public" output="false" hint="Converts centimeters to PostScript points">
     <cfargument name="centimeters" type="numeric" required="true">
-    <cfreturn ( arguments.centimeters * 72 ) / 2.54>
+    <cfreturn ( centimeters * 72 ) / 2.54>
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -124,7 +126,7 @@
 
     <cfset var salt = generatePassword( 16 ) />
 
-    <cfreturn hash( arguments.password & salt, 'SHA-512' ) & salt />
+    <cfreturn hash( password & salt, 'SHA-512' ) & salt />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -132,9 +134,9 @@
     <cfargument name="password" required="true" />
     <cfargument name="storedPW" required="true" />
 
-    <cfset var storedsalt = right( arguments.storedPW, 16 ) />
+    <cfset var storedsalt = right( storedPW, 16 ) />
 
-    <cfreturn 0 eq compare( arguments.storedPW, hash( arguments.password & storedsalt, 'SHA-512' ) & storedsalt ) />
+    <cfreturn 0 eq compare( storedPW, hash( password & storedsalt, 'SHA-512' ) & storedsalt ) />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -148,6 +150,7 @@
         "userid" = '',
         "canAccessAdmin" = false
       } />
+      <cfset structDelete( session, "subnav" ) />
     </cflock>
   </cffunction>
 
@@ -156,10 +159,10 @@
     <cfargument name="userid" required="false" />
     <cfargument name="username" required="false" />
 
-    <cfif structKeyExists( arguments, "username" ) and len( trim( arguments.username ))>
-      <cfset local.user = entityLoad( "contact", { username = arguments.username }, true ) />
-    <cfelseif structKeyExists( arguments, "userid" ) and len( trim( arguments.userid ))>
-      <cfset local.user = entityLoadByPK( "contact", arguments.userid ) />
+    <cfif structKeyExists( arguments, "username" ) and len( trim( username ))>
+      <cfset local.user = entityLoad( "contact", { username = username }, true ) />
+    <cfelseif structKeyExists( arguments, "userid" ) and len( trim( userid ))>
+      <cfset local.user = entityLoadByPK( "contact", userid ) />
     <cfelse>
       <cfreturn false />
     </cfif>
@@ -192,9 +195,9 @@
     <cfargument name="csv" required="true" />
     <cfargument name="delimiter" default="," />
 
-    <cfset var strRegEx = "(""(?:[^""]|"""")*""|[^""#arguments.delimiter#\r\n]*)(#arguments.delimiter#|\r\n?|\n)?"/>
+    <cfset var strRegEx = "(""(?:[^""]|"""")*""|[^""#delimiter#\r\n]*)(#delimiter#|\r\n?|\n)?"/>
     <cfset var objPattern = createObject( "java", "java.util.regex.Pattern" ).Compile( javaCast( "string", strRegEx )) />
-    <cfset var objMatcher = objPattern.Matcher( javaCast( "string", arguments.csv )) />
+    <cfset var objMatcher = objPattern.Matcher( javaCast( "string", csv )) />
     <cfset var arrData = [[]] />
 
     <cfloop condition="objMatcher.Find()">
@@ -206,7 +209,7 @@
       <cfset local.delimiter = objMatcher.Group( javaCast( "int", 2 )) />
 
       <cfif structKeyExists( local, "delimiter" )>
-        <cfif local.delimiter neq arguments.delimiter>
+        <cfif local.delimiter neq delimiter>
           <cfset arrayAppend( arrData, [] ) />
         </cfif>
       <cfelse>
@@ -262,7 +265,7 @@
     </cfscript>
   </cffunction>
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
+  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="mjhStructFindKey">
     <cfargument name="struct" type="any" required="true" />
     <cfargument name="key" type="string" required="true" />
@@ -330,7 +333,7 @@
     <cfreturn result />
   </cffunction>
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
+  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="getByKeyValue">
     <cfargument name="object" hint="struct or array" required="true" />
 
@@ -368,7 +371,25 @@
     <cfreturn result />
   </cffunction>
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
+  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
+  <cffunction name="setCFSetting">
+    <cfargument name="settingName" type="string" required="true" hint="requesttimeout,showdebugoutput,enablecfoutputonly" />
+    <cfargument name="settingValue" type="any" required="true" />
+
+    <cfswitch expression="#settingName#">
+      <cfcase value="requesttimeout">
+        <cfsetting requesttimeout="#settingValue#" />
+      </cfcase>
+      <cfcase value="enablecfoutputonly">
+        <cfsetting enablecfoutputonly="#settingValue#" />
+      </cfcase>
+      <cfcase value="showdebugoutput">
+        <cfsetting showdebugoutput="#settingValue#" />
+      </cfcase>
+    </cfswitch>
+  </cffunction>
+
+  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cfscript>
     public string function capFirst( required word )
     {
@@ -377,7 +398,7 @@
         return uCase( word );
       }
 
-      return uCase( left( word, 1 )) & lCase( right( word, len( word ) - 1 ));
+      return uCase( left( word, 1 )) & right( word, len( word ) - 1 );
     }
 
     // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
