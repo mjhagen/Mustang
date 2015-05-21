@@ -1,4 +1,4 @@
-component extends="thirdparty.framework.one"
+component extends="framework.one"
 {
   // defaults:
   variables.live = true;
@@ -20,8 +20,6 @@ component extends="thirdparty.framework.one"
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
   this.mappings = {
     "/#this.name#" = request.root,
-    "/framework" = request.root & "/thirdparty/framework",
-    "/javaloader" = request.root & "/thirdparty/javaloader",
     "/model" = request.root & "/model"
   };
 
