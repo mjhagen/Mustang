@@ -4,6 +4,9 @@ var th_last = '';
 // Provide modal inline edit functionality:
 // Used for one-to-many fields where you can add/remove unique items to a record
 jQuery( document ).ready( function( e ){
+  // Loading animation button
+  Ladda.bind( '.ladda-button' );
+
   // TinyMCE Editor config:
   tinymce.init({
     selector  : "textarea",
@@ -40,31 +43,8 @@ jQuery( document ).ready( function( e ){
     }
   }
 
-  // $( '.pick-a-color' ).pickAColor({
-  //   showHexInput            : true,
-  //   showAdvanced            : true,
-  //   inlineDropdown          : true,
-  //   showSavedColors         : false,
-  //   showBasicColors         : false
-  // });
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  $( "#mainform" ).bootstrapValidator({ live: "disabled" }).on( 'success.form.bv', function( e ){
-    e.preventDefault();
-
-    var $form     = $(e.target),
-    validator     = $form.data('bootstrapValidator'),
-    submitButton  = validator.getSubmitButton();
-
-    $form.find( 'input[name=submitButton]' ).val( submitButton.data( 'name' ));
-    $form.find( 'button[type=submit]' ).attr( 'disabled', 'disabled' );
-
-    submitButton.addClass( 'ladda-button' );
-    submitButton.ladda();
-    submitButton.ladda( 'start' );
-
-    validator.defaultSubmit();
-  });
+  $( "#mainform" ).validator();
 
 	$( document ).on( 'click', '#confirmsend-contact-info a.btn-primary', function(){
 		var name = $( this ).parents( '.modal' ).attr( 'data-name' );

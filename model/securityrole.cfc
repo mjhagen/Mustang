@@ -4,8 +4,8 @@ component extends="basecfc.base" persistent="true" cacheuse="read-only" hide="tr
   property fieldType="column"  inform="true" orderinform="2" editable="true" inlist="true" name="loginscript" type="string" ORMType="string" length="128";
   property fieldType="column"  inform="true" orderinform="3" editable="true" name="menulist" type="string" ORMType="string" length="256";
 
-  property fieldtype="one-to-many" name="contacts" singularName="contact" cfc="contact" FKColumn="securityroleid" cascade="delete-orphan" lazy="false";
-  property fieldtype="one-to-many" name="securityroleitems" singularName="securityroleitem" cfc="securityroleitem" FKColumn="securityroleid" lazy="false" inform="true" editable="true" inlineedit="true" orderby="section";
+  property fieldtype="one-to-many" name="contacts" singularName="contact" cfc="root.model.contact" FKColumn="securityroleid" cascade="delete-orphan" lazy="false";
+  property fieldtype="one-to-many" name="securityroleitems" singularName="securityroleitem" cfc="root.model.securityroleitem" FKColumn="securityroleid" lazy="false" inform="true" editable="true" inlineedit="true" orderby="section";
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function getCanAccessAdmin()

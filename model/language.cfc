@@ -6,5 +6,5 @@ component persistent="true"
 {
   property name="code" length="2";
   // property fieldType="many-to-many" name="countries" singularName="country" FKColumn="languageid" linkTable="languagecountry" inverseJoinColumn="countryid" cfc="country";
-  // property name="content" singularName="content" fieldType="one-to-many" cfc="content" FKColumn="languageid" inlineedit="true" where="deleted!='1'";
+  property name="content" singularName="content" fieldType="one-to-many" cfc="root.model.content" FKColumn="languageid" inlineedit="true" where="deleted!='1'";
 }

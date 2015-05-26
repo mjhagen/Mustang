@@ -116,11 +116,16 @@ component
       }
 
       structDelete( session, "alert" );
+      local.loginscript = session.auth.role.getLoginScript();
+      if( not isNull( local.loginscript ) and len( trim( local.loginscript )))
+      {
+        fw.redirect( local.loginscript );
+      }
     }
 
     if( not dontRedirect )
     {
-      fw.redirect( "admin:" );
+      fw.redirect( "admin:main.default" );
     }
   }
 

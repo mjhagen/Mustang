@@ -56,7 +56,5 @@
       <script src="/inc/plugins/bootstrap/compatibility/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body data-spy="scroll" data-target="##side-nav">
-    [#body#]
-  </body>
+  <body data-spy="scroll" data-target="##side-nav">#body#</body>
 </html></cfoutput>

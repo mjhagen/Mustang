@@ -1,9 +1,10 @@
-component extends="text"
+component extends="root.model.text"
           persistent=true
           table="text"
           discriminatorvalue="content"
           hint="admin texts (like pages) are stored in here"
           defaultSort = "fullyqualifiedaction"
+          hide="true"
 {
   property name="fullyqualifiedaction"  fieldType="column" length="128"  orderinform=1   inform=true editable=true listmask='<a href="/{val}">{val}</a>' inlist=true orderinlist=2;
   property name="subtitle"              fieldType="column" length="256"  orderinform=3   inform=true editable=true;

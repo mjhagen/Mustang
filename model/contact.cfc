@@ -14,7 +14,7 @@ component extends="basecfc.base"
 
   property name="name" persistent="false" inlist=true;
 
-  property name="securityrole" fieldtype="many-to-one" cfc="securityrole" FKColumn="securityroleid" inform=true editable=true;
+  property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid" inform=true editable=true;
 
   public string function getFullname()
   {

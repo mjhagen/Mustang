@@ -17,13 +17,7 @@
 
     <title>#local.title#</title>
 
-    <!--- layout: --->
 
-<!---
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/bootstrap-theme.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/font-awesome/css/font-awesome.min.css" />
- --->
 
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css" />
@@ -31,27 +25,21 @@
 
     <link rel="stylesheet" href="//www.fuelcdn.com/fuelux/3.6.3/css/fuelux.min.css" />
 
-    <link rel="stylesheet" href="/inc/plugins/bootstrap/theme/sb-admin-2.css" />
-    <link rel="stylesheet" href="/inc/plugins/metisMenu/metisMenu.min.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/bootstrap/theme/sb-admin-2.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/metisMenu/metisMenu.min.css" />
 
-    <!--- plugins: --->
-    <link rel="stylesheet" href="/inc/plugins/ladda/ladda.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/validator/bootstrapValidator.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/slider/css/bootstrap-slider.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/tagsinput/bootstrap-tagsinput.css" />
-    <link rel="stylesheet" href="/inc/plugins/tagsinput/typeahead.js-bootstrap.css" />
-    <link rel="stylesheet" href="/inc/plugins/fileupload/jquery.fileupload.css" />
-    <link rel="stylesheet" href="/inc/plugins/pick-a-color/css/pick-a-color-1.2.3.min.css" />
-    <link rel="stylesheet" href="/inc/plugins/jsoneditor/jsoneditor.min.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/ladda/ladda.min.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/fileupload/jquery.fileupload.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/jsoneditor/jsoneditor.min.css" />
 
-    <!--- user css: --->
-    <link rel="stylesheet" href="/inc/css/default.css" />
-    <link rel="stylesheet" href="/inc/css/admin.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/css/default.css" />
+    <link rel="stylesheet" href="#getBaseURL()#/inc/css/admin.css" />
 
-    <cfif cachedFileExists( 'inc/css/#getSubSystem()#.#getSection()#.css' )><link href="/inc/css/#getSubSystem()#.#getSection()#.css" rel="stylesheet"></cfif>
+    <cfif cachedFileExists( 'inc/css/#getSubSystem()#.#getSection()#.css' )><link href="#getBaseURL()#/inc/css/#getSubSystem()#.#getSection()#.css" rel="stylesheet"></cfif>
 
     <script>
-      var _webroot = '';
+      var _webroot = '#getBaseURL()#';
+      var _subsystemDelimiter = ':';
 
       <cfif structKeyExists( rc, "entity" )>
         var _entity = "#rc.entity#";
@@ -64,12 +52,6 @@
       </cfif>
     </script>
 
-    <!--- required for layout --->
-<!---
-    <script src="/inc/plugins/jquery/jquery-1.11.1.min.js"></script>
-    <script src="/inc/plugins/jquery/jquery-ui.min.js"></script>
-    <script src="/inc/plugins/bootstrap/bootstrap.min.js"></script>
- --->
 
     <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
     <script src="//code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
@@ -77,47 +59,42 @@
 
     <script src="//www.fuelcdn.com/fuelux/3.6.3/js/fuelux.min.js"></script>
 
-    <script src="/inc/plugins/bootstrap/theme/sb-admin-2.js"></script>
-    <script src="/inc/plugins/metisMenu/metisMenu.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/bootstrap/theme/sb-admin-2.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/metisMenu/metisMenu.min.js"></script>
 
-    <!--- plugins: --->
-    <script src="/inc/plugins/jquery/jquery.cookie.js"></script>
-    <script src="/inc/plugins/jquery/jquery.sortElements.js"></script>
-    <script src="/inc/plugins/jquery/jquery.mask.js"></script>
-    <script src="/inc/plugins/jquery/jquery.slimscroll.min.js"></script>
-    <script src="/inc/plugins/tinymce/tinymce.min.js"></script>
-    <script src="/inc/plugins/tinymce/jquery.tinymce.min.js"></script>
-    <script src="/inc/plugins/fileupload/jquery.ui.widget.js"></script>
-    <script src="/inc/plugins/fileupload/jquery.iframe-transport.js"></script>
-    <script src="/inc/plugins/fileupload/jquery.fileupload.js"></script>
-    <script src="/inc/plugins/validator/bootstrapValidator.min.js"></script>
-    <script src="/inc/plugins/ladda/spin.min.js"></script>
-    <script src="/inc/plugins/ladda/ladda.min.js"></script>
-    <script src="/inc/plugins/ladda/ladda.jquery.min.js"></script>
-    <script src="/inc/plugins/tagsinput/typeahead.bundle.min.js"></script>
-    <script src="/inc/plugins/tagsinput/bootstrap-tagsinput.js"></script>
-    <script src="/inc/plugins/pick-a-color/js/pick-a-color-1.2.3.min.js"></script>
-    <script src="/inc/plugins/jsoneditor/jsoneditor.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/jquery/jquery.cookie.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/jquery/jquery.sortElements.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/jquery/jquery.mask.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/jquery/jquery.slimscroll.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/tinymce/tinymce.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/tinymce/jquery.tinymce.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/fileupload/jquery.ui.widget.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/fileupload/jquery.iframe-transport.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/fileupload/jquery.fileupload.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/validator/validator.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/ladda/spin.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/ladda/ladda.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/ladda/ladda.jquery.min.js"></script>
+    <script src="#getBaseURL()#/inc/plugins/jsoneditor/jsoneditor.min.js"></script>
 
-    <!--- user scripts: --->
-    <script src="/inc/js/util.js"></script>
-    <script src="/inc/js/default.js"></script>
-    <script src="/inc/js/admin.js"></script>
+    <script src="#getBaseURL()#/inc/js/util.js"></script>
+    <script src="#getBaseURL()#/inc/js/default.js"></script>
+    <script src="#getBaseURL()#/inc/js/admin.js"></script>
 
     <cfset local.jsIncludeItem = getItem() />
     <cfif listFindNoCase( "new,edit", local.jsIncludeItem )>
       <cfset local.jsIncludeItem = 'view' />
     </cfif>
 
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.js' )><script src="/inc/js/#getSubSystem()#.#getSection()#.js"></script></cfif>
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js"></script></cfif>
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.#getSection()#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js"></script></cfif>
 
-    <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
+    <script src="//google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
 
     <!--[if lt IE 9]>
-      <script src="/inc/plugins/bootstrap/compatibility/html5shiv.min.js"></script>
-      <script src="/inc/plugins/bootstrap/compatibility/respond.min.js"></script>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="//cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
   </head>
   <body data-spy="scroll" data-target="##side-nav">

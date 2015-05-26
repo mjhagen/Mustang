@@ -1,18 +1,23 @@
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 function translate( label )
 {
-  if( !( label in translations ))
+  if( label in translations )
   {
-    // TODO: should be cached: (local storage?)
-    $.getJSON( ajaxUrl( 'adminapi:i18n' , 'getTranslations' ), {}, function( response, state, e ){
-      $( '.translate[data-label="' + label + '"]' ).html( response[label] );
-      translations = response;
-    });
+    return translations[label]
   }
   else
   {
-    $( '.translate[data-label="' + label + '"]' ).html( translations[label] );
+    $.getJSON( ajaxUrl( 'adminapi' + _subsystemDelimiter + 'i18n' , 'getTranslations' ), {}, function( response, state, e ){
+      translations = response;
+    });
+    return '';
   }
+}
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+function batchTranslate( labels )
+  {
+
 }
 
 

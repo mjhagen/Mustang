@@ -5,7 +5,7 @@ component extends="framework.one"
   variables.downForMaintenance = false;
 
   // globals:
-
+  request.appName = "Mustang";
   request.version = "1.0.0";
   request.reset = false;
   request.root = getDirectoryFromPath( getCurrentTemplatePath());
@@ -18,10 +18,7 @@ component extends="framework.one"
   this.sessionmanagement = true;
   this.setclientcookies = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
-  this.mappings = {
-    "/#this.name#" = request.root,
-    "/model" = request.root & "/model"
-  };
+  this.mappings["/root"] = request.root;
 
   // framework settings:
   variables.framework = {
@@ -31,7 +28,7 @@ component extends="framework.one"
     generateSES = false,
     SESOmitIndex = false,
     baseURL = request.context.config.webroot,
-    base = "/app",
+    base = "/root",
     diEngine = "none",
     environments = {
       live = {
@@ -105,7 +102,6 @@ component extends="framework.one"
     {
       request.context.i18n = variables.i18n = application.i18n;
       request.context.util = variables.util = application.util;
-      request.context.JSONUtil = variables.JSONUtil = application.JSONUtil;
       request.context.designService = variables.designService = application.designService;
     }
 
@@ -235,8 +231,8 @@ component extends="framework.one"
       "webroot"         = "",
       "reloadpw"        = "1",
       "disableSecurity" = true,
-      "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & this.name ),
-      "defaultLanguage"   = "nl_NL",
+      "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & request.appname ),
+      "defaultLanguage"   = "nl-NL",
       "securedSubsystems" = ""
     };
 

@@ -42,18 +42,6 @@
                 <input type="password" class="form-control" name="password" id="password" placeholder="#i18n.translate('placeholder-password')#">
               </div>
             </div>
-            <!---
-            <div class="form-group">
-              <div class="col-lg-offset-2 col-lg-10">
-                <div class="checkbox">
-                  <label>
-                    <input name="autologin" value="1" type="checkbox"> #i18n.translate('remember-me')#
-                  </label>
-                </div>
-              </div>
-            </div>
-            --->
-
             <div class="form-group">
               <div class="col-lg-offset-4 col-lg-8">
                 <button type="submit" class="btn btn-primary">#i18n.translate('log-in')#</button>

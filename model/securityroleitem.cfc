@@ -7,7 +7,7 @@ component extends="basecfc.base" persistent="true" hide="true"
   property name="delete" fieldType="column" ORMType="boolean" default="FALSE" inform="true" orderinform="5" editable="true" ininline="true" orderininline="5";
   property name="approve" fieldType="column" ORMType="boolean" default="FALSE" inform="true" orderinform="6" editable="true" ininline="true" orderininline="6";
 
-  property name="securityrole" fieldtype="many-to-one" cfc="securityrole" FKColumn="securityroleid";
+  property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid";
 
   function getName()
   {

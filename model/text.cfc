@@ -7,7 +7,7 @@ component extends="basecfc.base"
 {
   property name="title" length="128" inlist="true";
   property name="body" ORMType="text";
-  property name="language" fieldType="many-to-one" cfc="language" FKColumn="languageid";
+  property name="language" fieldType="many-to-one" cfc="root.model.language" FKColumn="languageid";
 
   public string function getName()
   {

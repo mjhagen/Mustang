@@ -69,12 +69,12 @@
           </cfloop>
         <cfelse>
           <cfset local.hiddenMenuitems = "base" />
-          <cfloop array="#directoryList( fw.mappings['/app'] & '/model', true, 'name', '*.cfc' )#" index="local.entityPath">
+          <cfloop array="#directoryList( fw.mappings['/root'] & '/model', true, 'name', '*.cfc' )#" index="local.entityPath">
             <cfset local.entityName = reverse( listRest( reverse( getFileFromPath( local.entityPath )), "." )) />
             <cfset local.hide = false />
 
-            <cfif fileExists( "#fw.mappings['/app']#/model/#local.entityName#.cfc" )>
-              <cfset local.entity = getMetaData( createObject( "model." & local.entityName )) />
+            <cfif fileExists( "#fw.mappings['/root']#/model/#local.entityName#.cfc" )>
+              <cfset local.entity = getMetaData( createObject( "root.model." & local.entityName )) />
               <cfset local.hide = structKeyExists( local.entity, "hide" ) />
             </cfif>
 
@@ -94,6 +94,6 @@
       </cflock>
     </cfif>
 
-    <cfset rc.design = createObject( "app.services.design" ).load() />
+    <cfset rc.design = createObject( "root.services.design" ).load() />
   </cffunction>
 </cfcomponent>
