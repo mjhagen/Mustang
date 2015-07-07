@@ -1,9 +1,13 @@
 <cfoutput>
   <div class="fuelux">
-    <div class="btn-group btn-group-xs" role="group">
-      <button type="button" class="btn btn-default expand-all">#i18n.translate( 'expand-all' )#</button>
-      <button type="button" class="btn btn-default collapse-all">#i18n.translate( 'collapse-all' )#</button>
-    </div>
+      <div class="btn-group btn-group-xs" role="group">
+        <button type="button" class="btn btn-info expand-all">#i18n.translate( 'expand-all' )#</button>
+        <button type="button" class="btn btn-info collapse-all">#i18n.translate( 'collapse-all' )#</button>
+      </div>
+
+      <div class="btn-group btn-group-xs" role="group">
+        <button type="button" class="btn btn-primary add-toplevel-group">#i18n.translate( 'add-toplevel-group' )#</button>
+      </div>
 
     <ul class="tree" role="tree" id="hierarchy">
       <li class="tree-branch hide" data-template="treebranch" role="treeitem" aria-expanded="false">

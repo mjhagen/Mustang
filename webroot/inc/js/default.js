@@ -6,6 +6,9 @@ var tagsToReplace = {
 };
 
 $(function(){
+  $.getJSON( ajaxUrl( 'adminapi' + _subsystemDelimiter + 'i18n' , 'getTranslations' ), {}, function( response, state, e ){
+    translations = response;
+  });
   // Auto hide certain alerts:
   $( '.alert-dismissable' ).delay( 30000 ).fadeOut();
 
@@ -20,7 +23,7 @@ $(function(){
 
     $( 'body' ).append( $modal );
 
-    $( '.modal-content' , $modal ).load(ajaxUrl( 'adminapi:modal' , 'about'), function(){
+    $( '.modal-content' , $modal ).load(ajaxUrl( 'adminapi' + _subsystemDelimiter + 'modal' , 'about'), function(){
       $( 'button.btn-modal-close' , $modal ).click( function(){
         var $parent = $( this ).parents( '.modal' );
         removeModal( $parent );
@@ -61,12 +64,32 @@ function removeModal($modal){
 
 function ajaxUrl( action, method, data )
 {
-  var seoAjax = false;
+  var seoAjax = true;
   var returnURL = _webroot + "/";
 
   if( seoAjax )
   {
-    // return _webroot + "/" + action + "/" + method + "/" + data );
+    if( action != undefined )
+    {
+      returnURL += action;
+    }
+
+    if( method != undefined )
+    {
+      returnURL += "/" + method;
+    }
+
+    if( data != undefined )
+    {
+      var serializedData = $.param( data );
+
+      if( serializedData != undefined && serializedData.length )
+      {
+        returnURL += "/" + serializedData;
+      }
+    }
+
+    return returnURL;
   }
   else
   {
@@ -84,7 +107,7 @@ function ajaxUrl( action, method, data )
 
     if( data != undefined )
     {
-      var serializedData = $.param( data, true );
+      var serializedData = $.param( data );
 
       if( serializedData != undefined && serializedData.length )
       {

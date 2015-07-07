@@ -16,6 +16,17 @@
     <cfargument name="alternative" default="#label#" />
     <cfargument name="stringVariables" default="#{}#" required="false" type="struct" />
     <cfargument name="nospan" default="true" required="false" />
+    <cfargument name="capFirst" default="true" required="false" />
+
+    <cfif not structKeyExists( request, "infLoopGuard" )>
+      <cfset request.infLoopGuard = 0 />
+    </cfif>
+
+    <cfset request.infLoopGuard++ />
+
+    <cfif request.infLoopGuard gt 4>
+      <cfreturn alternative />
+    </cfif>
 
     <cfset var result = "" />
     <cfset var usecache = request.context.config.appIsLive />
@@ -33,6 +44,37 @@
 
     <cfif not len( trim( translation ))>
       <cfset translation = alternative />
+
+      <!--- Try some default translation options on FQAs --->
+      <cfif listLen( label, ":" ) eq 2 and listLen( label, "." ) eq 2>
+        <cfset var subsystem  = listFirst( label, ":" ) />
+        <cfset var section    = listFirst( listRest( label, ":" ), "." ) />
+        <cfset var item       = listRest( listRest( label, ":" ), "." ) />
+
+        <cfif label eq "#subsystem#:#section#.default">
+          <cfset translation = "{#subsystem#:#section#}" />
+        </cfif>
+
+        <cfif label eq "#subsystem#:#section#.view">
+          <cfset translation = "{#section#}" />
+        </cfif>
+
+        <cfif label eq "#subsystem#:#section#.edit">
+          <cfset translation = "{btn-edit} {#section#}" />
+        </cfif>
+
+        <cfif label eq "#subsystem#:#section#.new">
+          <cfset translation = "{btn-new} {#section#}" />
+        </cfif>
+
+        <cfif listFirst( label, "-" ) eq "btn">
+          <cfset translation = "{btn-#item#} {#section#}" />
+        </cfif>
+      <cfelseif listLen( label, ":" ) eq 2>
+        <cfset translation = "{#listLast( label, ':' )#s}" />
+      <cfelseif listLen( label, "-" ) gte 2 and listFirst( label, "-" ) eq "placeholder">
+        <cfset translation = "{placeholder} {#listRest( label, '-' )#}" />
+      </cfif>
     </cfif>
 
     <cfset result = parseStringVariables( translation, stringVariables ) />
@@ -42,7 +84,9 @@
       <cfset result = replaceNoCase( result, local.label, translate( mid( local.label, 2, len( local.label ) - 2 ))) />
     </cfloop>
 
-    <cfreturn request.context.util.capFirst( result ) />
+    <cfset structDelete( request, "infLoopGuard" ) />
+
+    <cfreturn capFirst ? request.context.util.capFirst( result ) : result  />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->

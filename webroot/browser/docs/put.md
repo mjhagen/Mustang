@@ -1,0 +1,1 @@
+PUT is used to update an existing record, so you'll need to provide an ID in the URL: `/api/object/id`, to test that out in this environment, create a parameter with `id` in the left field and put the ID value in the right parameter field.

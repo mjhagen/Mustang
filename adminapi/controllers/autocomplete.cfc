@@ -1,84 +1,52 @@
-<cfcomponent extends="apibase" output="false">
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="typeahead">
-    <cfargument name="rc" />
+component extends="apibase"
+{
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function search( rc )
+  {
+    param name="rc.q" default="";
+    param name="rc.entity" default="";
 
-    <cfset request.layout = false />
+    var start = getTickCount();
+    var metadata = getMetaData( entityNew( rc.entity ));
+    var result = { "results" = [], "status" = "failed", "speed" = 0 };
 
-    <cfparam name="rc.name" default="" />
-    <cfparam name="rc.entity" default="" />
-    <cfparam name="rc.field" default="name" />
+    if( not structKeyExists( metadata, "table" ) or not len( trim( metadata.table )))
+    {
+      throw( message="This method needs a table name set on the entity." );
+    }
 
-    <cfif not len( trim( rc.entity ))>
-      <cfreturn [] />
-    </cfif>
+    if( not len( trim( rc.entity )))
+    {
+      return returnAsJSON( result );
+    }
 
-    <cfset var result = [] />
-    <cfset var query = [] />
-    <cfset var maxresult = 15 />
-    <cfset var queryParam = {} />
-    <cfset var queryStart = " FROM #rc.entity# t WHERE ( t.deleted IS NULL OR t.deleted = FALSE ) AND ( " />
-    <cfset var queryMid = "" />
-    <cfset var queryEnd = " ORDER BY  t.#rc.field# " />
+    if( len( trim( rc.q )))
+    {
+      var qs = new query();
+      qs.addParam( name = "name", value = "%#rc.q#%", cfsqltype = "cf_sql_varchar" );
+      qs.setSQL( "
+        SELECT  *
+        FROM    #metadata.table#
+        WHERE   NOT data IS NULL
+          AND   data <> ''
+          AND   CAST(( CAST( data AS json ) ->> 'name' ) AS varchar ) LIKE ( :name )
+      " );
+      var completed = qs.execute();
 
-    <cfset local.i = 0 />
-    <cfloop list="#rc.field#" index="local.field">
-      <cfset local.i++ />
-      <cfset queryStart &= " t.#local.field# LIKE :name " />
-      <cfif local.i lt listLen( rc.field )>
-        <cfset queryStart &= " OR " />
-      </cfif>
-    </cfloop>
-    <cfset queryStart &= " ) " />
+      for( var record in completed.getResult())
+      {
+        jsondata = deserializeJSON( record.data );
+        param name="jsondata.name" default="";
+        arrayAppend( result.results, {
+          "id"   = record.id,
+          "text" = jsondata.name
+        });
+      }
+    }
 
-    <cfif len( trim( rc.name ))>
-      <!--- Search by exact string: --->
-      <cfset queryParam = { "name" = "#rc.name#" } />
-      <cfset qry_sel_exact = ORMExecuteQuery( queryStart & queryMid & queryEnd, queryParam, false, { "maxresults" = maxresult } )/>
-      <cfloop array="#qry_sel_exact#" index="local.row">
-        <cfset arrayAppend( query, local.row ) />
-      </cfloop>
-      <cfset maxresult -= arrayLen( query ) />
+    result.status = "ok";
+    result.speed = getTickCount() - start;
 
-      <!--- Search by first part of the string: --->
-      <cfif arrayLen( query ) lt maxresult>
-        <cfset queryParam = { "name" = "#rc.name#%" } />
-        <cfset queryMid = "" />
-        <cfif arrayLen( query )>
-          <cfset queryMid = " AND NOT t IN ( :prev ) " />
-          <cfset queryParam["prev"] = query />
-        </cfif>
-        <cfset qry_sel_start = ORMExecuteQuery( queryStart & queryMid & queryEnd, queryParam, false, { "maxresults" = maxresult } )/>
-        <cfloop array="#qry_sel_start#" index="local.row">
-          <cfset arrayAppend( query, local.row ) />
-        </cfloop>
-        <cfset maxresult -= arrayLen( query ) />
-      </cfif>
-
-      <!--- Search by any part of the string: --->
-      <cfif arrayLen( query ) lt maxresult>
-        <cfset queryParam = { "name" = "%#rc.name#%" } />
-        <cfset queryMid = "" />
-        <cfif arrayLen( query )>
-          <cfset queryMid = " AND NOT t IN ( :prev ) " />
-          <cfset queryParam["prev"] = query />
-        </cfif>
-        <cfset qry_sel_rest = ORMExecuteQuery( queryStart & queryMid & queryEnd, queryParam, false, { "maxresults" = maxresult } )/>
-        <cfloop array="#qry_sel_rest#" index="local.row">
-          <cfset arrayAppend( query, local.row ) />
-        </cfloop>
-        <cfset maxresult -= arrayLen( query ) />
-      </cfif>
-
-      <cfloop array="#query#" index="local.row">
-        <cfset local.resultItem = {
-          "id"        = local.row.getID(),
-          "name"      = local.row.getName()
-        } />
-        <cfset arrayAppend( result, local.resultItem ) />
-      </cfloop>
-    </cfif>
-
-    <cfset returnAsJSON( result ) />
-  </cffunction>
-</cfcomponent>
+    returnAsJSON( result );
+  }
+}

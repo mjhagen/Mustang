@@ -1,10 +1,9 @@
-component persistent="true"
-          extends="basecfc.base"
+component extends="basecfc.base"
+          persistent=true
           hint="helper object containing languages (used for translating labels and content based on location)"
           cacheuse="read-only"
-          hide="true"
+          hide=true
 {
-  property name="code" length="2";
-  // property fieldType="many-to-many" name="countries" singularName="country" FKColumn="languageid" linkTable="languagecountry" inverseJoinColumn="countryid" cfc="country";
-  property name="content" singularName="content" fieldType="one-to-many" cfc="root.model.content" FKColumn="languageid" inlineedit="true" where="deleted!='1'";
+  property name="code" fieldType="column" type="string" length=2 inform=1 editable=1;
+  property name="text" singularName="text" fieldType="one-to-many" cfc="root.model.text" FKColumn="languageid" inlineedit=1 where="deleted!='1'";
 }

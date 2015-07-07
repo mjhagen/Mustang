@@ -23,13 +23,11 @@
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
 
     <!--- user css: --->
-    <link rel="stylesheet" href="/inc/css/default.css" />
-    <link rel="stylesheet" href="/inc/css/admin.css" />
-
-    <cfif cachedFileExists( 'inc/css/#getSubSystem()#.#getSection()#.css' )><link href="/inc/css/#getSubSystem()#.#getSection()#.css" rel="stylesheet"></cfif>
+    <cfif cachedFileExists( 'inc/css/#getSubSystem()#.#getSection()#.css' )><link href="#getBaseURL()#/inc/css/#getSubSystem()#.#getSection()#.css" rel="stylesheet"></cfif>
 
     <script>
-      var _webroot = '';
+      var _webroot = '#getBaseURL()#';
+      var _subsystemDelimiter = ':';
     </script>
 
     <!--- required for layout --->
@@ -38,23 +36,27 @@
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 
     <!--- user scripts: --->
-    <script src="/inc/js/util.js"></script>
-    <script src="/inc/js/default.js"></script>
-    <script src="/inc/js/admin.js"></script>
+    <script src="#getBaseURL()#/inc/js/util.js"></script>
 
     <cfset local.jsIncludeItem = getItem() />
     <cfif listFindNoCase( "new,edit", local.jsIncludeItem )>
       <cfset local.jsIncludeItem = 'view' />
     </cfif>
 
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.js' )><script src="/inc/js/#getSubSystem()#.#getSection()#.js"></script></cfif>
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js"></script></cfif>
-    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.#getSection()#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js"></script></cfif>
+    <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js' )><script src="#getBaseURL()#/inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js"></script></cfif>
 
     <!--[if lt IE 9]>
-      <script src="/inc/plugins/bootstrap/compatibility/html5shiv.min.js"></script>
-      <script src="/inc/plugins/bootstrap/compatibility/respond.min.js"></script>
+      <script src="#getBaseURL()#/inc/plugins/bootstrap/compatibility/html5shiv.min.js"></script>
+      <script src="#getBaseURL()#/inc/plugins/bootstrap/compatibility/respond.min.js"></script>
     <![endif]-->
   </head>
-  <body data-spy="scroll" data-target="##side-nav">#body#</body>
+  <body data-spy="scroll" data-target="##side-nav">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">#body#</div>
+      </div>
+    </div>
+  </body>
 </html></cfoutput>

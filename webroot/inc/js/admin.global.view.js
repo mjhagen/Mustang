@@ -4,9 +4,6 @@ var th_last = '';
 // Provide modal inline edit functionality:
 // Used for one-to-many fields where you can add/remove unique items to a record
 jQuery( document ).ready( function( e ){
-  // Loading animation button
-  Ladda.bind( '.ladda-button' );
-
   // TinyMCE Editor config:
   tinymce.init({
     selector  : "textarea",
@@ -72,41 +69,24 @@ jQuery( document ).ready( function( e ){
   });
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  $( '.typeahead' ).each(function(){
-    // this typeahead feature uses a shared autocomplete api
+  $( '.autocomplete' ).each(function(){
+    var $this = $( this );
 
-    var $input = $( this );
-    var entity = $input.data( 'source' );
-
-    var bloodhoundParams = {
-      "datumTokenizer"  : Bloodhound.tokenizers.obj.whitespace( 'name' ),
-      "queryTokenizer"  : Bloodhound.tokenizers.whitespace,
-      "remote"          : ajaxUrl( 'adminapi:autocomplete' , 'typeahead' , [ ['entity', entity] , ['name','%QUERY']])
-    };
-
-    if( $input.data( 'fields' ) != undefined )
-    {
-      // bloodhoundParams["remote"] += '/field/' + $input.data( 'fields' );
-    }
-
-    var engine = new Bloodhound( bloodhoundParams );
-    engine.initialize();
-
-    // if tags:
-    $input.tagsinput({
-      confirmKeys : [13, 44, 9],
-      typeaheadjs : {
-                      displayKey  : 'name',
-                      valueKey    : 'name',
-                      source      : engine.ttAdapter()
-                    }
+    $this.select2({
+      ajax : {
+        url : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'autocomplete', 'search', { entity : $this.data( "entity" )})
+      },
+      dataType: 'json',
+      results: function (data, page) {
+        return { results: data.results };
+      }
     });
   });
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   $( 'input[type=file]' ).fileupload({
     pasteZone   : null,
-    url         : ajaxUrl( 'adminapi:crud' , 'upload'),
+    url         : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'upload'),
     dataType    : 'json',
     add         : function( e, data ){
                     $( '.progress', $( this ).closest( 'div' )).show();
@@ -162,7 +142,7 @@ jQuery( document ).ready( function( e ){
       'show'  : true
     }).load( $( this ).attr( 'href' ), function( e ){
       $( 'input[type=file]', $( this )).fileupload({
-        url         : ajaxUrl( 'adminapi:crud' , 'upload'),
+        url         : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'upload'),
         dataType    : 'json',
         add         : function( e, data ){
                         $( '.progress', $( this ).closest( 'div' )).show();
@@ -223,7 +203,7 @@ jQuery( document ).ready( function( e ){
     $( '#inlineedit-result' ).append( '<input type="hidden" name="add_' + field + '" value=\'' + safe_tags_replace( stringyfiedDataToSave ) + '\' id="' + dataToSave.uuid + '" />' );
 
     // visual representation
-    $.ajax( ajaxUrl( 'adminapi:crud' , 'displayInlineEditLine'), {
+    $.ajax( ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'displayInlineEditLine'), {
       data        : {
                       entityName : entity,
                       formdata : stringyfiedDataToSave

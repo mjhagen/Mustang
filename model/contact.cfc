@@ -15,6 +15,8 @@ component extends="basecfc.base"
   property name="name" persistent="false" inlist=true;
 
   property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid" inform=true editable=true;
+  property name="createdObjects" singularName="createdObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="createcontactid";
+  property name="updatedObjects" singularName="updatedObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="updatecontactid";
 
   public string function getFullname()
   {

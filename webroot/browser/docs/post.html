@@ -1,0 +1,9 @@
+<h3>Introduction</h3><p>POST allows you to insert one or more new records.</p><p>If you provide a parameter labeled "batch" containing a JSON formatted array of entities the API will insert those records.</p><h3>Parameters</h3>
+<ul>
+  <li>id <code>id=#GUID#</code></li>
+  <li>any field you wish to filter on <code>firstName=John</code></li>
+</ul><h3>Example</h3><p><code>
+#apiBaseURL#/#entityName#
+</code></p><h3>Batch example</h3><p><code>
+batch = [{&quot;name&quot;:&quot;test1&quot;},{&quot;name&quot;:&quot;test2&quot;}]
+</code></p>

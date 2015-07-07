@@ -8,16 +8,19 @@ component output="false"
 
   public void function setLanguage( rc )
   {
-    var defaultLanguageID = "76ae31d3-42a7-4dbd-8853-65aa66e73561";
-    var languageid = defaultLanguageID;
+    var defaultLanguage = rc.config.defaultLanguage;
+    var languageid = createUUID();
     var reload = false;
 
     lock scope="session" timeout=5
     {
-      if( not structKeyExists( cookie, "languageid" ) or
+      if(
+          not structKeyExists( cookie, "languageid" ) or
           not structKeyExists( session, "languageid" ) or
           not structKeyExists( session, "language" ) or
-          structKeyExists( url, "reload" ))
+          structKeyExists( url, "languageid" ) or
+          structKeyExists( url, "reload" )
+        )
       {
         reload = true;
       }
@@ -25,7 +28,7 @@ component output="false"
 
     if( reload )
     {
-      if( not len( trim( languageid )) and structKeyExists( rc, "languageid" ) and len( trim( rc.languageid )))
+      if( structKeyExists( rc, "languageid" ) and len( trim( rc.languageid )))
       {
         languageid = rc.languageid;
       }
@@ -45,36 +48,39 @@ component output="false"
           }
         }
       }
-    }
 
-    var languages = entityLoad( "language", { "id" = languageid }, "", { cacheable = true });
+      var language = entityLoadByPK( "language", languageid );
 
-    if( arrayLen( languages ))
-    {
-      language = languages[1];
-    }
+      if( isNull( language ))
+      {
+        language = entityNew( "language" );
+        language.setID( languageid );
+        language.setCode( defaultLanguage );
+      }
 
-    if( isNull( language ))
-    {
-      language = entityNew( "language", { "id" = defaultLanguageID, "code" = "nl" });
-    }
+      languageid = language.getID();
 
-    languageid = language.getID();
+      if( not isSimpleValue( language ) and
+          not isNull( language.getCode()) and
+          len( trim( language.getCode())))
+      {
+        setLocale( language.getCode());
+      }
 
-    if( not isSimpleValue( language ) and
-        not isNull( language.getCode()) and
-        len( trim( language.getCode())))
-    {
-      setLocale( language.getCode());
+      lock scope="session" timeout=5
+      {
+        cookie.languageid = languageid;
+        session.languageid = languageid;
+        session.language = language;
+        rc.currentlanguageid = languageid;
+        rc.currentlanguage = language;
+      }
     }
 
     lock scope="session" timeout=5
     {
-      cookie.languageid = languageid;
-      session.languageid = languageid;
-      session.language = language;
-      rc.currentlanguageid = languageid;
-      rc.currentlanguage = language;
+      rc.currentlanguageid = session.languageid;
+      rc.currentlanguage = session.language;
     }
   }
 }

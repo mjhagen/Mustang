@@ -1,34 +1,60 @@
 component extends="framework.one"
 {
-  // defaults:
-  variables.live = true;
-  variables.downForMaintenance = false;
-
-  // globals:
-  request.appName = "Mustang";
-  request.version = "1.0.0";
-  request.reset = false;
-  request.root = getDirectoryFromPath( getCurrentTemplatePath());
-  request.context.config = readConfigFile( cgi.server_name );
-  request.webroot = request.context.config.webroot;
-  request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
-  request.adminNotCRUD = ["database"];
-
   // CF application setup:
   this.sessionmanagement = true;
   this.setclientcookies = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
-  this.mappings["/root"] = request.root;
 
-  // framework settings:
+  application = {};
+  session = {};
+
+  this.mappings["/root"] = getDirectoryFromPath( getCurrentTemplatePath());
+
+  // Global variables:
+  request.appName = "Mustang";
+  request.version = "1.0.0";
+  request.root = this.mappings["/root"];
+  request.reset = false;
+
+  // Config:
+  request.context.config = generateConfig( cgi.server_name );
+
+  if( structKeyExists( url, "reload" ) and url.reload neq request.context.config.reloadpw )
+  {
+    structDelete( url, "reload" );
+  }
+
+  // Config based global variables:
+  request.context.debug = ( listFind( request.context.config.debugIP, cgi.remote_addr ) and request.context.config.showDebug );
+  request.webroot = request.context.config.webroot;
+  request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
+  request.reset = ( structKeyExists( url, "nuke" ) and structKeyExists( url, "reload" ));
+
+  // Private variables:
+  variables.downForMaintenance = false; // true during updates
+  variables.live = request.context.config.appIsLive;
+
+  // Datasource settings:
+  this.datasource = request.context.config.datasource;
+  this.ormEnabled = true;
+  this.ormsettings = {
+    CFCLocation = "/root/model",
+    DBCreate = ( request.reset ? "update" : ( variables.live ? "none" : "update" )),
+    logSQL = variables.live ? false : true,
+    sqlscript = request.context.config.nukescript,
+    secondaryCacheEnabled = variables.live ? true : false,
+    savemapping = true,
+    autogenmap = true
+  };
+
   variables.framework = {
+    base = "/root",
     error = "common:app.error",
     usingSubsystems = true,
     defaultSubsystem = "admin",
-    generateSES = false,
-    SESOmitIndex = false,
+    generateSES = true,
+    SESOmitIndex = true,
     baseURL = request.context.config.webroot,
-    base = "/root",
     diEngine = "none",
     environments = {
       live = {
@@ -40,39 +66,6 @@ component extends="framework.one"
         trace = false
       }
     }
-  };
-
-  // debug settings:
-  request.context.debug = false;
-
-  if( listFind( request.context.config.debugIP, cgi.remote_addr ) and request.context.config.showDebug )
-  {
-    request.context.debug = true;
-  }
-
-  if( structKeyExists( url, "reload" ) and url.reload neq request.context.config.reloadpw )
-  {
-    structDelete( url, "reload" );
-  }
-
-  if( structKeyExists( url, "nuke" ))
-  {
-    request.reset = structKeyExists( url, "reload" );
-  }
-
-  variables.live = request.context.config.appIsLive;
-
-  // Datasource settings:
-  this.datasource = request.context.config.datasource;
-  this.ormEnabled = true;
-  this.ormsettings = {
-    CFCLocation = "/model",
-    DBCreate = ( request.reset ? "update" : ( variables.live ? "none" : "update" )),
-    logSQL = variables.live ? false : true,
-    sqlscript = request.context.config.nukescript,
-    secondaryCacheEnabled = variables.live ? true : false,
-    savemapping = false,
-    autogenmap = true
   };
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,7 +149,6 @@ component extends="framework.one"
 
     if(
         getSubsystem() eq "admin" and
-        not arrayFindNoCase( request.adminNotCRUD, getSection()) and
         not cachedFileExists( '../admin/controllers/#getSection()#.cfc' )
       )
     {
@@ -165,7 +157,6 @@ component extends="framework.one"
 
     if(
         getSubsystem() eq "api" and
-        not arrayFindNoCase( request.adminNotCRUD, getSection()) and
         not cachedFileExists( '../api/controllers/#getSection()#.cfc' )
       )
     {
@@ -176,16 +167,12 @@ component extends="framework.one"
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public any function getEnvironment()
   {
-    if( !variables.live )
-    {
-      request.version &= "b" & REReplace( "$Revision: 0 $", "[^\d]+", "", "all" );
-    }
 
     return variables.live ? "live" : "dev";
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function setupEnvironment( environment )
+  public any function setupEnvironment( String environment="" )
   {
     // App specific globals
     switch( environment )
@@ -214,7 +201,7 @@ component extends="framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function readConfigFile( site )
+  public any function generateConfig( String site="" )
   {
     // DEFAULT:
     var defaultSettings = {
@@ -232,8 +219,9 @@ component extends="framework.one"
       "reloadpw"        = "1",
       "disableSecurity" = true,
       "fileUploads"     = expandPath( "../ProjectsTemporaryFiles/files_" & request.appname ),
-      "defaultLanguage"   = "nl-NL",
-      "securedSubsystems" = ""
+      "defaultLanguage"   = "nl_NL",
+      "securedSubsystems" = "",
+      "encryptKey"        = ""
     };
 
     var config = cacheGet( "config-#this.name#" );
@@ -259,5 +247,42 @@ component extends="framework.one"
     }
 
     return defaultSettings;
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  private array function getRoutes()
+  {
+    var entityName = 0;
+    var entityReference = 0;
+    var entityMetaData = 0;
+    var modelFiles = 0;
+    var listOfResources = "";
+
+    var resources = cacheGet( "resources-#this.name#" );
+
+    if(
+        isNull( resources ) or
+        request.reset or
+        not request.context.config.appIsLive
+      )
+    {
+      modelFiles = directoryList( this.mappings["/root"] & "/model", true, "name", "*.cfc", "name asc" );
+
+      for( var fileName in modelFiles )
+      {
+        listOfResources = listAppend( listOfResources, reverse( listRest( reverse( fileName ), "." )));
+      }
+
+      resources = [{
+        "$RESOURCES" = {
+          resources = listOfResources,
+          subsystem = "api"
+        }
+      }];
+
+      cachePut( "resources-#this.name#", resources );
+    }
+
+    return resources;
   }
 }

@@ -1,13 +1,21 @@
-<cfcomponent output="false">
-<cfscript>
+component
+{
   this.name = "diagram";
   this.title = "Database Diagram";
-  this.modelpath = "../../model";
-  this.mappings["/model"] = expandPath( this.modelpath );
-</cfscript>
+  this.modelPath = expandPath( "../../model" );
+  this.lmPath = "D:\Accounts\E\Extensions\Linguine Maps\oy-lm-1.4";
 
-  <cffunction name="onRequestStart">
-    <cfset request.title = this.title />
-    <cfset request.modelpath = this.modelpath />
-  </cffunction>
-</cfcomponent>
+  if( listLast( cgi.server_name, "." ) eq "dev" )
+  {
+    this.lmPath = "C:\Users\mjhagen\Dropbox\Projects\thirdparty\oy-lm-1.4";
+  }
+
+  this.mappings["/model"] = this.modelPath;
+
+  public Void function onRequestStart()
+  {
+    request.title = this.title;
+    request.modelPath = this.modelPath;
+    request.lmPath = this.lmPath;
+  }
+}

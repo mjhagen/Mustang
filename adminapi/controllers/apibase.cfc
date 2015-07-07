@@ -1,13 +1,18 @@
 component
 {
-  request.layout = false;
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public any function init( fw )
   {
     variables.fw = fw;
+
+    request.layout = false;
+
+    request.context.util.setCFSetting( "showdebugoutput", false );
+
     return this;
   }
+
+  public void function before( rc ){}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public string function returnAsJSON( variable )
@@ -20,12 +25,17 @@ component
       returnType = "text/html";
     }
 
-    createObject( "java", "coldfusion.tagext.lang.SettingTag" ).setShowDebugOutput( false );
+    if( listFindNoCase( "lucee,railo", server.ColdFusion.ProductName ))
+    {
+      pageContext.getResponse().setContentType( returnType );
+      pageContext.clear();
+    }
+    else
+    {
+      pageContext.getFusionContext().getResponse().setHeader( "Content-Type", returnType );
+      pageContext.getCfoutput().clearAll();
+    }
 
-    setting showDebugOutput=false;
-
-    pageContext.getFusionContext().getResponse().setHeader( "Content-Type", returnType );
-    pageContext.getCfoutput().clearAll();
     writeOutput( serializeJSON( variable ));
   }
 }

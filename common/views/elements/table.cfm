@@ -41,7 +41,11 @@
       </tr>
     </thead>
     <tbody>
-      <cfset local.rowNr = 1 />
+      <cfif structKeyExists( local.queryString, 'offset' )>
+        <cfset local.rowNr = local.queryString.offset + 1 />
+      <cfelse>
+        <cfset local.rowNr = 1 />			
+      </cfif>
       <cfloop array="#local.alldata#" index="local.data">
         <cfset local.params = {
           "data" = local.data,

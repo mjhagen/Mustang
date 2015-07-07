@@ -4,6 +4,8 @@ component
   public any function init( struct fw )
   {
     variables.fw = fw;
+    variables.frameworkConfig = fw.getConfig();
+
     return this;
   }
 
@@ -20,12 +22,10 @@ component
     param name="rc.username" default="";
     param name="rc.password" default="";
     param name="rc.authhash" default="";
-    param name="rc.origin" default=fw.getSubsystem();
+    param name="rc.dontRedirect" default=false;
 
     lock name="login_#rc.username#" type="exclusive" timeout="5"
     {
-      var dontRedirect = false;
-
       session.alert = {
         "class" = "danger",
         "text"  = "login-error"
@@ -35,7 +35,7 @@ component
       {
         rc.util.createSession();
 
-        local.contactID = decrypt( toString( toBinary( rc.authhash )), request.encryptKey );
+        local.contactID = decrypt( toString( toBinary( rc.authhash )), request.context.config.encryptKey );
         local.user = entityLoadByPK( "contact", local.contactID );
 
         if( isNull( local.user ))
@@ -44,30 +44,34 @@ component
             "class" = "danger",
             "text"  = "user-not-found"
           };
-          fw.redirect( "#rc.origin#:security.login" );
+          doLogout( rc=rc );
         }
 
-        dontRedirect = true;
+        rc.dontRedirect = true;
       }
       else
       {
+        var loginValidated = true;
+
         // CHECK USERNAME:
         var findusers = entityLoad( "contact", { "username" = rc.username, "deleted" = false });
 
-        if( not isDefined( "findusers" ) or arrayLen( findusers ) neq 1 )
+        if( isNull( findusers ) or arrayLen( findusers ) neq 1 )
         {
-          fw.redirect( "#rc.origin#:security.login", "all" );
+          loginValidated = false;
         }
-        // / CHECK USERNAME:
 
-        local.user = findusers[1];
+        if( loginValidated )
+        {
+          local.user = findusers[1];
 
-        // CHECK PASSWORD:
-        var loginValidated = rc.util.comparePassword( password = rc.password, storedPW = local.user.getPassword());
+          // CHECK PASSWORD:
+          loginValidated = rc.util.comparePassword( password = rc.password, storedPW = local.user.getPassword());
+        }
 
         if( not loginValidated )
         {
-          fw.redirect( "#rc.origin#:security.login" );
+          doLogout( rc=rc );
         }
         // / CHECK PASSWORD:
       }
@@ -78,29 +82,29 @@ component
           "class" = "danger",
           "text"  = "user-was-deleted"
         };
-        fw.redirect( "#rc.origin#:security.login" );
+        doLogout( rc=rc );
       }
 
       local.user.setLastLoginDate( now());
 
       if( rc.config.log )
       {
-        transaction
-        {
-          local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
-          local.loginEvent = entityNew( "logentry", {
-            "logaction"     = local.securityLogAction,
-            "note"          = "Logged in",
-            "createContact" = local.user,
-            "createDate"    = now(),
-            "createIP"      = cgi.remote_addr,
-            "updateContact" = local.user,
-            "updateDate"    = now(),
-            "updateIP"      = cgi.remote_addr,
-            "deleted"       = false
-          });
-          entitySave( local.loginEvent );
-        }
+        local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
+
+        local.loginEvent = entityNew( "logentry" );
+        entitySave( local.loginEvent );
+
+        local.loginEvent.save( {
+          "logaction"     = local.securityLogAction.getID(),
+          "note"          = "Logged in",
+          "createContact" = local.user.getID(),
+          "createDate"    = now(),
+          "createIP"      = cgi.remote_addr,
+          "updateContact" = local.user.getID(),
+          "updateDate"    = now(),
+          "updateIP"      = cgi.remote_addr,
+          "deleted"       = false
+        });
       }
 
       rc.util.refreshSession( userid = local.user.getID());
@@ -112,20 +116,22 @@ component
           "class" = "danger",
           "text"  = "user-has-no-role"
         };
-        fw.redirect( "#rc.origin#:security.login" );
+        doLogout( rc=rc );
       }
 
       structDelete( session, "alert" );
-      local.loginscript = session.auth.role.getLoginScript();
-      if( not isNull( local.loginscript ) and len( trim( local.loginscript )))
-      {
-        fw.redirect( local.loginscript );
-      }
     }
 
-    if( not dontRedirect )
+    if( not rc.dontRedirect )
     {
-      fw.redirect( "admin:main.default" );
+      var loginscript = local.user.getLoginScript();
+
+      if( isNull( loginscript ) or not len( trim( loginscript )))
+      {
+        loginscript = "#variables.frameworkConfig["defaultSubsystem"]#:";
+      }
+
+      fw.redirect( loginscript );
     }
   }
 
@@ -166,6 +172,19 @@ component
         }
       }
 
+      if( fw.getSubsystem() eq "api" or listFirst( cgi.PATH_INFO, "/" ) eq "api" or ( fw.getSubsystem() eq "admin" and fw.getSection() eq "api" ))
+      {
+        var pageContext = getPageContext();
+        var response = pageContext.getFusionContext().getResponse();
+            response.setStatus( 401 );
+            response.setHeader( "Content-Type", "application/json" );
+
+        request.context.util.setCFSetting( "showdebugoutput", false );
+        pageContext.getCfoutput().clearAll();
+        writeOutput( serializeJSON( {"status"="error","detail"="Unauthorized"} ));
+        abort;
+      }
+
       fw.redirect( "common:security.login" );
     }
   }
@@ -176,13 +195,21 @@ component
     lock scope="session" type="exclusive" timeout="5"
     {
       // Always allow access to common:security and api:css
-      if( listFind( 'security,css', fw.getSection()))
+      if(
+          listFind( 'security,css', fw.getSection()) or
+          (
+            len( trim( rc.config.securedSubsystems )) and
+            not listFindNoCase( rc.config.securedSubsystems, fw.getSubSystem())
+          )
+        )
       {
         rc.auth.isLoggedIn = false;
-        if( structKeyExists( session, "auth" ) and
-                      structKeyExists( session.auth, "isLoggedIn" ))
+        if(
+            structKeyExists( session, "auth" ) and
+            structKeyExists( session.auth, "isLoggedIn" )
+          )
         {
-          rc.auth.isLoggedIn = session.auth.isLoggedIn;
+          rc.auth = session.auth;
         }
         return;
       }
@@ -190,6 +217,24 @@ component
       // Auto login
       if( structKeyExists( rc, 'authhash' ))
       {
+        doLogin( rc = rc );
+      }
+
+      var HTTPRequestData = GetHTTPRequestData();
+
+      if(
+          isStruct( HTTPRequestData ) and
+          structKeyExists( HTTPRequestData, "headers" ) and
+          isStruct( HTTPRequestData.headers ) and
+          structKeyExists( HTTPRequestData.headers, "authorization" ) and
+          len( trim( HTTPRequestData.headers.authorization ))
+        )
+      {
+        var basicAuth = toString( toBinary( listLast( HTTPRequestData.headers.authorization, " " )));
+        rc.username = listFirst( basicAuth, ":" );
+        rc.password = listRest( basicAuth, ":" );
+        rc.dontRedirect = true;
+
         doLogin( rc = rc );
       }
 
@@ -204,7 +249,7 @@ component
 
       rc.auth = session.auth;
 
-      if( not rc.util.authIsValid( rc.auth ))
+      if( not rc.util.authIsValid( rc.auth ) or not rc.auth.isLoggedIn )
       {
         session.alert = {
           "class" = "danger",
@@ -212,21 +257,6 @@ component
         };
         doLogout( rc = rc );
       }
-
-      if( fw.getSubSystem() neq "home" and not rc.auth.isLoggedIn )
-      {
-        session.alert = {};
-        fw.redirect( 'security.login' );
-      }
-
-      // if( fw.getSubSystem() eq "admin" and not rc.auth.canAccessAdmin )
-      // {
-      //   session.alert = {
-      //     "class" = "danger",
-      //     "text"  = "no-access-to-admin"
-      //   };
-      //   doLogout( rc = rc );
-      // }
     }
   }
 
@@ -239,7 +269,7 @@ component
 
     if( isDefined( 'rc.data' ))
     {
-      local.authhash = toBase64( encrypt( rc.data.getID(), request.encryptKey ));
+      local.authhash = toBase64( encrypt( rc.data.getID(), request.context.config.encryptKey ));
       local.link = '<a href="http://#cgi.server_name##fw.buildURL( action = 'admin:profile.password', queryString = { authhash = local.authhash })#">Klik hier</a>';
       local.email = entityLoad( 'content', { fullyQualifiedAction = 'common:mail.activation' }, true );
       local.mailTo = rc.debug ? rc.config.ownerEmail : rc.data.getEmail();

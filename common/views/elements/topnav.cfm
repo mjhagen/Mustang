@@ -40,9 +40,9 @@
             <i class="fa fa-caret-down"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="#buildURL('help.faq')#"><i class="fa fa-question fa-fw"></i> #i18n.translate('home:help.faq')#</a></li>
-            <li><a href="#buildURL('help.contact')#"><i class="fa fa-phone fa-fw"></i> #i18n.translate('home:help.contact')#</a></li>
-            <li><a href="#buildURL('help.about')#" id="about-app"><i class="fa fa-info-circle fa-fw"></i> #i18n.translate('home:help.about')#</a></li>
+            <li><a href="#buildURL('help.faq')#"><i class="fa fa-question fa-fw"></i> #i18n.translate('help.faq')#</a></li>
+            <li><a href="#buildURL('help.contact')#"><i class="fa fa-phone fa-fw"></i> #i18n.translate('help.contact')#</a></li>
+            <li><a href="#buildURL('help.about')#" id="about-app"><i class="fa fa-info-circle fa-fw"></i> #i18n.translate('help.about')#</a></li>
           </ul>
         </li>
         <li class="dropdown">
@@ -52,8 +52,8 @@
             <i class="fa fa-caret-down"></i>
           </a>
           <ul class="dropdown-menu">
-            <li><a href="#buildURL('home:profile.default')#"><i class="fa fa-user fa-fw"></i> #i18n.translate('home:profile.default')#</a></li>
-            <!--- <li><a href="#buildURL('home:profile.settings')#"><i class="fa fa-cog fa-fw"></i> #i18n.translate('home:profile.settings')#</a></li> --->
+            <li><a href="#buildURL('profile.default')#"><i class="fa fa-user fa-fw"></i> #i18n.translate('profile.default')#</a></li>
+            <!--- <li><a href="#buildURL('profile.settings')#"><i class="fa fa-cog fa-fw"></i> #i18n.translate('profile.settings')#</a></li> --->
             <li class="divider"></li>
             <li><a href="#buildURL('common:security.doLogout')#"><i class="fa fa-power-off fa-fw"></i> #i18n.translate('log-out')#</a></li>
           </ul>

@@ -85,8 +85,6 @@
     <cfif cachedFileExists( 'inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.global.#local.jsIncludeItem#.js"></script></cfif>
     <cfif cachedFileExists( 'inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js' )><script src="/inc/js/#getSubSystem()#.#getSection()#.#local.jsIncludeItem#.js"></script></cfif>
 
-    <script src="https://google-code-prettify.googlecode.com/svn/loader/run_prettify.js"></script>
-
     <!--[if lt IE 9]>
       <script src="/inc/plugins/bootstrap/compatibility/html5shiv.min.js"></script>
       <script src="/inc/plugins/bootstrap/compatibility/respond.min.js"></script>

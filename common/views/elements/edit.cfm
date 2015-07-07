@@ -189,14 +189,14 @@
             <cfif local.data.getDeleted() eq 1>
               <div class="form-group">
                 <div class="col-lg-offset-3 col-lg-9">
-                  <a data-toggle="modal" href="##confirmrestore" class="btn btn-success">#i18n.translate('restore-#local.entity#')#</a>
+                  <a data-toggle="modal" href="##confirmrestore" class="btn btn-success">#i18n.translate('btn-admin:#local.entity#.restore')#</a>
                 </div>
               </div>
               #view('common:elements/modal',{name="restore",yeslink=buildURL('.restore','?#local.entity#id=#rc[local.entity&'id']#')})#
             <cfelse>
               <div class="form-group">
                 <div class="col-lg-offset-3 col-lg-9">
-                  <a data-toggle="modal" href="##confirmdelete" class="btn btn-danger">#i18n.translate('delete-#local.entity#')#</a>
+                  <a data-toggle="modal" href="##confirmdelete" class="btn btn-danger">#i18n.translate('btn-admin:#local.entity#.delete')#</a>
                 </div>
               </div>
               #view('common:elements/modal',{name="delete",yeslink=buildURL('.delete','?#local.entity#id=#rc[local.entity&'id']#')})#

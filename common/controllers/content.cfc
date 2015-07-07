@@ -16,7 +16,7 @@
       FROM    content c
 
       WHERE c.fullyqualifiedaction = <cfqueryparam value="#fw.getfullyqualifiedaction()#" />
-        AND c.language.id = <cfqueryparam value="#rc.currentlanguage.getID()#" />
+        AND c.language.id = <cfqueryparam value="#rc.currentlanguageID#" />
         AND c.deleted != <cfqueryparam cfsqltype="cf_sql_tinyint" value="1" />
     </cfquery>
 
@@ -49,7 +49,7 @@
       <cfif local.reload>
         <cfset rc.subnav = "" />
 
-        <cfif structKeyExists( rc.auth, "role" ) and isObject( rc.auth.role )>
+        <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "role" ) and isObject( rc.auth.role )>
           <cfif rc.auth.role.getName() eq "Administrator">
             <cfset local.roleSubnav = "" />
           <cfelseif rc.auth.isLoggedIn>
@@ -69,23 +69,28 @@
           </cfloop>
         <cfelse>
           <cfset local.hiddenMenuitems = "base" />
+          <cfset local.subnav = [] />
+          <cfset local.tempSortOrder = 9001 />
+
           <cfloop array="#directoryList( fw.mappings['/root'] & '/model', true, 'name', '*.cfc' )#" index="local.entityPath">
             <cfset local.entityName = reverse( listRest( reverse( getFileFromPath( local.entityPath )), "." )) />
-            <cfset local.hide = false />
+            <cfset local.sortOrder = local.tempSortOrder++ />
+            <cfset local.entity = getMetaData( createObject( "root.model." & local.entityName )) />
 
-            <cfif fileExists( "#fw.mappings['/root']#/model/#local.entityName#.cfc" )>
-              <cfset local.entity = getMetaData( createObject( "root.model." & local.entityName )) />
-              <cfset local.hide = structKeyExists( local.entity, "hide" ) />
+            <cfif structKeyExists( local.entity, "hide" ) or
+                  listFindNoCase( local.hiddenMenuitems, local.entityName ) or
+                  ( rc.auth.isLoggedIn and not rc.auth.role.can( "view", local.entityName ))>
+              <cfcontinue />
             </cfif>
 
-            <cfif listFindNoCase( local.hiddenMenuitems, local.entityName )>
-              <cfset local.hide = true />
+            <cfif structKeyExists( local.entity, "sortOrder" )>
+              <cfset local.sortOrder = local.entity["sortOrder"] />
             </cfif>
 
-            <cfif rc.auth.isLoggedIn and rc.auth.role.can( "view", local.entityName ) and not local.hide>
-              <cfset rc.subnav = listAppend( rc.subnav, local.entityName ) />
-            </cfif>
+            <cfset local.subnav[local.sortOrder] = local.entityName />
           </cfloop>
+
+          <cfset rc.subnav = arrayToList( local.subnav ) />
         </cfif>
       </cfif>
 

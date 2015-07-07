@@ -1,582 +1,683 @@
-<cfcomponent output="false">
-  <cfprocessingdirective pageEncoding="utf-8" />
+component output="false"
+{
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public any function init( fw )
+  {
+    param name="variables.listitems" default="";
+    param name="variables.listactions" default=".new";
+    param name="variables.lineactions" default=".view,.edit";
+    param name="variables.submitButtons" default="#[]#" type="array";
+    param name="variables.showNavbar" default="true";
+    param name="variables.showSearch" default="false";
+    param name="variables.showAlphabet" default="false";
+    param name="variables.showPager" default="true";
+    param name="variables.entity" default="#fw.getSection()#";
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="init" access="public" returntype="any" output="false">
-    <cfargument name="fw" />
+  	variables.fw = fw;
 
-    <cfparam name="variables.listitems" default="" />
-    <cfparam name="variables.listactions" default=".new" />
-    <cfparam name="variables.lineactions" default=".view,.edit" />
-    <cfparam name="variables.submitButtons" default="#[]#" type="array" />
-    <cfparam name="variables.showNavbar" default="true" />
-    <cfparam name="variables.showSearch" default="false" />
-    <cfparam name="variables.showAlphabet" default="false" />
-    <cfparam name="variables.showPager" default="true" />
-    <cfparam name="variables.entity" default="#fw.getSection()#" />
+    return this;
+  }
 
-  	<cfset variables.fw = fw />
-
-    <cfreturn this />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="before" access="public" output="false" returntype="void">
-    <cfif fw.getItem() eq "edit" and not rc.auth.role.can( "change", fw.getSection())>
-      <cfset session.alert = {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function before( rc )
+  {
+    if( fw.getItem() eq "edit" and not rc.auth.role.can( "change", fw.getSection()))
+    {
+      session.alert = {
         "class" = "danger",
         "text"  = "privileges-error-1"
-      } />
-      <cfset fw.redirect( "admin:" ) />
-    </cfif>
+      };
+      fw.redirect( "admin:" );
+    }
 
-    <cfset session.alert = {
+    session.alert = {
       "class" = "danger",
       "text"  = "privileges-error-2"
-    } />
+    };
 
-    <cfif rc.auth.role.can( "view", fw.getSection()) or fw.getSection() eq "main">
-      <cfset structDelete( session, "alert" ) />
-    </cfif>
+    if( rc.auth.role.can( "view", fw.getSection()) or fw.getSection() eq "main" )
+    {
+      structDelete( session, "alert" );
+    }
 
-    <cfif structKeyExists( session, "alert" )>
-      <cfset fw.redirect( "admin:" ) />
-    </cfif>
+    if( fw.getSection() eq "api" )
+    {
+      session.alert = {
+        "class" = "danger",
+        "text"  = "privileges-error-3"
+      };
+      fw.redirect( "api:" );
+    }
 
-    <cfset variables.entity = fw.getSection() />
-  </cffunction>
+    if( structKeyExists( session, "alert" ))
+    {
+      fw.redirect( "admin:" );
+    }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="default" access="public" output="false" returntype="void">
-    <cfparam name="rc.columns" default="#[]#" />
-    <cfparam name="rc.offset" default="0" />
-    <cfparam name="rc.maxResults" default="30" />
-    <cfparam name="rc.d" default="0" /><!--- rc.d(escending) default false (ASC) --->
-    <cfparam name="rc.orderby" default="" />
-    <cfparam name="rc.startsWith" default="" />
-    <cfparam name="rc.showdeleted" default="0" />
-    <cfparam name="rc.filters" default="#[]#" />
-    <cfparam name="rc.filterType" default="contains" />
-    <cfparam name="rc.classColumn" default="" />
+    variables.entity = fw.getSection();
+  }
 
-    <!--- exit controller on non crud items --->
-    <cfswitch expression="#fw.getSection()#">
-      <cfcase value="main">
-        <cfset var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' )) />
-        <cfset fw.setView( 'admin:main.dashboard-' & dashboard )>
-        <cfreturn />
-      </cfcase>
-      <cfcase value="profile">
-        <cfset fw.setView( 'common:profile.default' )>
-        <cfreturn />
-      </cfcase>
-    </cfswitch>
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function default( rc )
+  {
+    param name="rc.columns" default="#[]#";
+    param name="rc.offset" default="0";
+    param name="rc.maxResults" default="30";
+    param name="rc.d" default="0";// rc.d(escending) default false (ASC)
+    param name="rc.orderby" default="";
+    param name="rc.startsWith" default="";
+    param name="rc.showdeleted" default="0";
+    param name="rc.filters" default="#[]#";
+    param name="rc.filterType" default="contains";
+    param name="rc.classColumn" default="";
 
-    <cfparam name="rc.lineView" default="common:elements/line" />
-    <cfparam name="rc.tableView" default="common:elements/table" />
-    <cfparam name="rc.fallbackView" default="common:elements/list" />
+    // exit controller on non crud items
+    switch( fw.getSection())
+    {
+      case "main":
+        var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' ));
+        fw.setView( 'admin:main.dashboard-' & dashboard );
+        return;
+      break;
 
-    <!--- default crud behaviour continues: --->
-    <cfset rc.entity = variables.entity />
+      case "profile":
+        fw.setView( 'common:profile.default' );
+        return;
+      break;
+    }
 
-    <cfif not structKeyExists( ORMGetSessionFactory().getAllClassMetadata(), rc.entity )>
-      <!--- exit with error when trying to control a non-persisted entity --->
-      <cfset session.alert = {
+    param name="rc.lineView" default="common:elements/line";
+    param name="rc.tableView" default="common:elements/table";
+    param name="rc.fallbackView" default="common:elements/list";
+
+    // default crud behaviour continues:
+    rc.entity = variables.entity;
+
+    if( not structKeyExists( ORMGetSessionFactory().getAllClassMetadata(), rc.entity ))
+    {
+      // exit with error when trying to control a non-persisted entity
+      session.alert = {
         "class" = "danger",
         "text"  = "not-an-entity-error"
-      } />
-      <cfset fw.redirect( "admin:main.default" ) />
-    </cfif>
+      };
+      fw.redirect( "admin:main.default" );
+    }
 
-    <cfset var object = entityNew( rc.entity ) />
-    <cfset var entityProperties = getMetaData( object ) />
-    <cfset var property = "" />
-    <cfset var indexNr = 0 />
-    <cfset var orderNr = 0 />
-    <cfset var columnName = "" />
-    <cfset var columnsinlist = [] />
-    <cfset var orderByString = "" />
-    <cfset var queryOptions = { ignorecase = true, maxResults = rc.maxResults, offset = rc.offset } />
+    var object = entityNew( rc.entity );
+    var entityProperties = getMetaData( object );
+    var property = "";
+    var indexNr = 0;
+    var orderNr = 0;
+    var columnName = "";
+    var columnsInList = [];
+    var orderByString = "";
+    var queryOptions = { ignorecase = true, maxResults = rc.maxResults, offset = rc.offset };
 
-    <cfset rc.recordCounter = 0 />
-    <cfset rc.deleteddata   = 0 />
-    <cfset rc.properties    = object.getInheritedProperties() />
-    <cfset rc.lineactions   = variables.lineactions />
-    <cfset rc.listactions   = variables.listactions />
-    <cfset rc.showNavbar    = variables.showNavbar />
-    <cfset rc.showSearch    = variables.showSearch />
-    <cfset rc.showAlphabet  = variables.showAlphabet />
-    <cfset rc.showPager     = variables.showPager />
-    <cfset rc.showAsTree    = false />
+    rc.recordCounter = 0;
+    rc.deleteddata   = 0;
+    rc.properties    = object.getInheritedProperties();
+    rc.lineactions   = variables.lineactions;
+    rc.listactions   = variables.listactions;
+    rc.showNavbar    = variables.showNavbar;
+    rc.showSearch    = variables.showSearch;
+    rc.showAlphabet  = variables.showAlphabet;
+    rc.showPager     = variables.showPager;
+    rc.showAsTree    = false;
 
-    <cfif structKeyExists( entityProperties, "list" )>
-      <cfset rc.tableView  = "common:elements/" & entityProperties.list />
+    if( structKeyExists( entityProperties, "list" ))
+    {
+      rc.tableView  = "common:elements/" & entityProperties.list;
 
-      <cfif entityProperties.list eq "hierarchy">
-        <cfset rc.allColumns = {} />
-        <cfset rc.allData = [] />
-        <cfset rc.showAsTree = true />
-        <cfreturn />
-      </cfif>
-    </cfif>
+      if( entityProperties.list eq "hierarchy" )
+      {
+        rc.allColumns = {};
+        rc.allData = [];
+        rc.showAsTree = true;
+        return;
+      }
+    }
 
-    <cfif not rc.auth.role.can( "change", rc.entity )>
-      <cfset local.lineactionPointer = listFind( rc.lineactions, '.edit' ) />
-      <cfif local.lineactionPointer>
-        <cfset rc.lineactions = listDeleteAt( rc.lineactions, local.lineactionPointer ) />
-      </cfif>
-    </cfif>
+    if( not rc.auth.role.can( "change", rc.entity ))
+    {
+      local.lineactionPointer = listFind( rc.lineactions, '.edit' );
+      if( local.lineactionPointer )
+      {
+        rc.lineactions = listDeleteAt( rc.lineactions, local.lineactionPointer );
+      }
+    }
 
-    <cfif structKeyExists( entityProperties, "classColumn" ) and len( trim( entityProperties.classColumn ))>
-      <cfset rc.classColumn = entityProperties.classColumn />
-    </cfif>
+    if( structKeyExists( entityProperties, "classColumn" ) and len( trim( entityProperties.classColumn )))
+    {
+      rc.classColumn = entityProperties.classColumn;
+    }
 
-    <cfset var defaultSort = ( structKeyExists( entityProperties.extends, "defaultSort" ) ? entityProperties.extends.defaultSort : "" ) />
-    <cfset defaultSort = ( structKeyExists( entityProperties, "defaultSort" ) ? entityProperties.defaultSort : defaultSort ) />
+    if( structKeyExists( entityProperties, "defaultSort" ))
+    {
+      rc.defaultSort = entityProperties.defaultSort;
+    }
+    else if( structKeyExists( entityProperties.extends, "defaultSort" ))
+    {
+      rc.defaultSort = entityProperties.extends.defaultSort;
+    }
+    else
+    {
+      rc.defaultSort = "";
+    }
 
-    <cfset rc.defaultSort = defaultSort />
+    if( len( trim( rc.orderby )))
+    {
+      local.vettedOrderByString = "";
 
-    <cfif len( trim( rc.orderby ))>
-      <cfset defaultSort = rc.orderby & ( rc.d ? ' DESC' : '' ) />
-    </cfif>
+      for( var orderField in listToArray( rc.orderby ))
+      {
+        if( orderField contains ';' )
+        {
+          continue;
+        }
 
-    <cfset rc.orderby = replaceNoCase( defaultSort, ' ASC', '', 'all' ) />
-    <cfset rc.orderby = replaceNoCase( rc.orderby, ' DESC', '', 'all' ) />
+        if( orderField contains ' ASC' or orderField contains ' DESC' )
+        {
+          orderField = listFirst( orderField, ' ' );
+        }
 
-    <cfif defaultSort contains 'DESC'>
-      <cfset rc.d = 1 />
-    <cfelseif defaultSort contains 'ASC'>
-      <cfset rc.d = 0 />
-    </cfif>
+        if( structKeyExists( rc.properties, orderField ))
+        {
+          local.vettedOrderByString = listAppend( local.vettedOrderByString, orderField );
+        }
+      }
 
-    <cfloop list="#defaultSort#" index="orderByPart">
-      <cfset orderByString = listAppend( orderByString, "mainEntity.#orderByPart#" ) />
-    </cfloop>
+      rc.orderby = local.vettedOrderByString;
 
-    <cfif len( trim( rc.startsWith ))>
-      <cfset rc.filters = [{
+      if( len( trim( rc.orderby )))
+      {
+        rc.defaultSort = rc.orderby & ( rc.d ? ' DESC' : '' );
+      }
+    }
+
+    rc.orderby = replaceNoCase( rc.defaultSort, ' ASC', '', 'all' );
+    rc.orderby = replaceNoCase( rc.orderby, ' DESC', '', 'all' );
+
+    if( rc.defaultSort contains ' DESC' )
+    {
+      rc.d = 1;
+    }
+    else if( rc.defaultSort contains ' ASC' )
+    {
+      rc.d = 0;
+    }
+
+    for( orderByPart in listToArray( rc.defaultSort ))
+    {
+      orderByString = listAppend( orderByString, "mainEntity.#orderByPart#" );
+    }
+
+    if( len( trim( rc.startsWith )))
+    {
+      rc.filters = [{
         "field" = "name",
         "filterOn" = replace( rc.startsWith, '''', '''''', 'all' )
-      }] />
-      <cfset rc.filterType = "starts-with" />
-    </cfif>
+      }];
+      rc.filterType = "starts-with";
+    }
 
-    <cfloop collection="#rc#" item="key">
-      <cfif not isSimpleValue( rc[key] )>
-        <cfcontinue />
-      </cfif>
-      <cfset key = urlDecode( key ) />
-      <cfif listFirst( key, "_" ) eq "filter" and len( trim( rc[key] ))>
-        <cfset arrayAppend( rc.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) }) />
-      </cfif>
-    </cfloop>
+    for( key in rc )
+    {
+      if( not isSimpleValue( rc[key] ))
+      {
+        continue;
+      }
 
-    <cfif not structKeyExists( rc, "alldata" )>
-      <cfif arrayLen( rc.filters )>
-        <cfset var alsoFilterKeys = structFindKey( rc.properties, 'alsoFilter' ) />
-        <cfset var alsoFilterEntity = "" />
-        <cfset var whereBlock = " WHERE 0 = 0 " />
-        <cfset var counter = 0 />
+      key = urlDecode( key );
 
-        <cfif rc.showdeleted eq 0>
-          <cfset whereBlock &= " AND ( mainEntity.deleted IS NULL OR mainEntity.deleted = false ) " />
-        </cfif>
+      if( listFirst( key, "_" ) eq "filter" and len( trim( rc[key] )))
+      {
+        arrayAppend( rc.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) });
+      }
+    }
 
-        <cfloop array="#rc.filters#" index="filter">
-          <cfif len( filter.field ) gt 2 and right( filter.field, 2 ) eq "id">
-            <cfset whereBlock &= "AND mainEntity.#left( filter.field, len( filter.field ) - 2 )# = ( FROM #left( filter.field, len( filter.field ) - 2 )# WHERE id = '#filter.filterOn#' )" />
-          <cfelse>
-            <cfif filter.filterOn eq "NULL">
-              <cfset whereBlock &= " AND ( " />
-              <cfset whereBlock &= " mainEntity.#lCase( filter.field )# IS NULL " />
-            <cfelse>
-              <cfif rc.filterType eq "contains">
-                <cfset filter.filterOn = "%#filter.filterOn#" />
-              </cfif>
-              <cfset filter.filterOn = "#filter.filterOn#%" />
+    if( not structKeyExists( rc, "alldata" ))
+    {
+      if( arrayLen( rc.filters ))
+      {
+        var alsoFilterKeys = structFindKey( rc.properties, 'alsoFilter' );
+        var alsoFilterEntity = "";
+        var whereBlock = " WHERE 0 = 0 ";
+        var whereParameters = {};
+        var counter = 0;
 
-              <cfset whereBlock &= " AND ( " />
-              <cfset whereBlock &= " mainEntity.#lCase( filter.field )# LIKE '#filter.filterOn#' " />
-            </cfif>
+        if( rc.showdeleted eq 0 )
+        {
+          whereBlock &= " AND ( mainEntity.deleted IS NULL OR mainEntity.deleted = false ) ";
+        }
 
-            <cfloop array="#alsoFilterKeys#" index="alsoFilterKey">
-              <cfif alsoFilterKey.owner.name neq filter.field>
-                <cfcontinue />
-              </cfif>
-              <cfset counter++ />
-              <cfset alsoFilterEntity &= " LEFT JOIN mainEntity.#listFirst( alsoFilterKey.owner.alsoFilter, '.' )# AS entity_#counter# " />
-              <cfset whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#filter.filterOn#' " />
-            </cfloop>
-            <cfset whereBlock &= " ) " />
-          </cfif>
-        </cfloop>
+        for( filter in rc.filters )
+        {
+          if( len( filter.field ) gt 2 and right( filter.field, 2 ) eq "id" )
+          {
+            whereBlock &= "AND mainEntity.#left( filter.field, len( filter.field ) - 2 )# = ( FROM #left( filter.field, len( filter.field ) - 2 )# WHERE id = :where_id )";
+            whereParameters["where_id"] = filter.filterOn;
+          }
+          else
+          {
+            if( filter.filterOn eq "NULL" )
+            {
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )# IS NULL ";
+            }
+            else if( structKeyExists( rc.properties[filter.field], "cfc" ))
+            {
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )#.id = :where_#lCase( filter.field )# ";
+              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
+            }
+            else
+            {
+              if( rc.filterType eq "contains" )
+              {
+                filter.filterOn = "%#filter.filterOn#";
+              }
 
-        <cfif structKeyExists( entityProperties, "where" ) and len( trim( entityProperties.where ))>
-          <cfset whereBlock &= entityProperties.where />
-        </cfif>
+              filter.filterOn = "#filter.filterOn#%";
 
-        <cfset var HQLcounter  = " SELECT COUNT( mainEntity ) AS total " />
-        <cfset var HQLselector  = " SELECT mainEntity " />
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )# LIKE :where_#lCase( filter.field )# ";
+              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
+            }
 
-        <cfset HQL = "" />
-        <cfset HQL &= " FROM #lCase( rc.entity )# mainEntity " />
-        <cfset HQL &= alsoFilterEntity />
-        <cfset HQL &= whereBlock />
+            for( alsoFilterKey in alsoFilterKeys )
+            {
+              if( alsoFilterKey.owner.name neq filter.field )
+              {
+                continue;
+              }
 
-        <cfset HQLcounter = HQLcounter & HQL />
-        <cfset HQLselector = HQLselector & HQL />
+              counter++;
+              alsoFilterEntity &= " LEFT JOIN mainEntity.#listFirst( alsoFilterKey.owner.alsoFilter, '.' )# AS entity_#counter# ";
+              whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#filter.filterOn#' ";
+              whereParameters["where_#listLast( alsoFilterKey.owner.alsoFilter, '.' )#"] = filter.filterOn;
+            }
+            whereBlock &= " ) ";
+          }
+        }
 
-        <cfif len( trim( orderByString ))>
-          <cfset HQLselector &= " ORDER BY #orderByString# " />
-        </cfif>
+        if( structKeyExists( entityProperties, "where" ) and len( trim( entityProperties.where )))
+        {
+          whereBlock &= entityProperties.where;
+        }
 
-        <cfset rc.alldata = ORMExecuteQuery( HQLselector, [], queryOptions ) />
-        <cfif arrayLen( rc.alldata ) gt 0>
-          <cfset rc.recordCounter = ORMExecuteQuery( HQLcounter, [], { ignorecase = true })[1] />
-        </cfif>
-      <cfelse>
-        <cfset HQL = " FROM #lCase( rc.entity )# mainEntity " />
+        var HQLcounter  = " SELECT COUNT( mainEntity ) AS total ";
+        var HQLselector  = " SELECT mainEntity ";
 
-        <cfif rc.showDeleted>
-          <cfset HQL &= " WHERE mainEntity.deleted = TRUE " />
-        <cfelse>
-          <cfset HQL &= " WHERE ( mainEntity.deleted IS NULL OR mainEntity.deleted = FALSE ) " />
-        </cfif>
+        HQL = "";
+        HQL &= " FROM #lCase( rc.entity )# mainEntity ";
+        HQL &= alsoFilterEntity;
+        HQL &= whereBlock;
 
-        <cfif len( trim( orderByString ))>
-          <cfset HQL &= " ORDER BY #orderByString# " />
-        </cfif>
+        HQLcounter = HQLcounter & HQL;
+        HQLselector = HQLselector & HQL;
 
-        <cftry>
-          <cfset rc.alldata = ORMExecuteQuery( HQL, {}, queryOptions ) />
-          <cfcatch>
-            <cfcontent reset=true /><cfsetting enableCFoutputOnly="false" />
-            <cfdump var="#cfcatch#" />
-            <cfabort />
-            <cfset rc.alldata = [] />
-          </cfcatch>
-        </cftry>
+        if( len( trim( orderByString )))
+        {
+          HQLselector &= " ORDER BY #orderByString# ";
+        }
 
-        <cfif arrayLen( rc.alldata ) gt 0>
-          <cfset rc.recordCounter = ORMExecuteQuery( "SELECT COUNT( e ) AS total FROM #lCase( rc.entity )# AS e WHERE e.deleted != :deleted", { "deleted" = true }, { ignorecase = true })[1] />
-          <cfset rc.deleteddata = ORMExecuteQuery( "SELECT COUNT( mainEntity.id ) AS total FROM #lCase( rc.entity )# AS mainEntity WHERE mainEntity.deleted = :deleted", { "deleted" = true } )[1] />
-          <cfif rc.showdeleted>
-            <cfset rc.recordCounter = rc.deleteddata />
-          </cfif>
-        </cfif>
-      </cfif>
-    </cfif>
+        rc.alldata = ORMExecuteQuery( HQLselector, whereParameters, queryOptions );
 
-    <cfset rc.allColumns = {} />
+        if( arrayLen( rc.alldata ) gt 0 )
+        {
+          rc.recordCounter = ORMExecuteQuery( HQLcounter, whereParameters, { ignorecase = true })[1];
+        }
+      }
+      else
+      {
+        HQL = " FROM #lCase( rc.entity )# mainEntity ";
 
-    <cfset indexNr = 0 />
-    <cfloop collection="#rc.properties#" item="key">
-      <cfset property = rc.properties[key] />
-      <cfset orderNr++ />
-      <cfset rc.allColumns[property.name] = property />
-      <cfset rc.allColumns[property.name].columnIndex = orderNr />
-      <cfif structKeyExists( property, "inlist" )>
-        <cfset indexNr++ />
-        <cfset columnsinlist[indexNr] = property.name />
-      </cfif>
-    </cfloop>
+        if( rc.showDeleted )
+        {
+          HQL &= " WHERE mainEntity.deleted = TRUE ";
+        }
+        else
+        {
+          HQL &= " WHERE ( mainEntity.deleted IS NULL OR mainEntity.deleted = FALSE ) ";
+        }
 
-    <cfif len( trim( variables.listitems ))>
-      <cfset columnsinlist = [] />
-      <cfloop list="#variables.listitems#" index="local.listItem">
-        <cfset arrayAppend( columnsinlist, local.listItem ) />
-      </cfloop>
-    </cfif>
+        if( len( trim( orderByString )))
+        {
+          HQL &= " ORDER BY #orderByString# ";
+        }
 
-    <cfset numberOfColumns = arrayLen( columnsinlist ) />
-    <cfloop array="#columnsinlist#" index="columnName">
-      <cftry>
-        <cfif structKeyExists( rc.allColumns, columnName )>
-          <cfset property = rc.allColumns[columnName] />
-          <cfset arrayAppend( rc.columns, {
+        try
+        {
+          rc.alldata = ORMExecuteQuery( HQL, {}, queryOptions );
+        }
+        catch( any e )
+        {
+          writeDump( e );
+          abort;
+          rc.alldata = [];
+        }
+
+        if( arrayLen( rc.alldata ) gt 0 )
+        {
+          rc.recordCounter = ORMExecuteQuery( "SELECT COUNT( e ) AS total FROM #lCase( rc.entity )# AS e WHERE e.deleted != :deleted", { "deleted" = true }, { ignorecase = true })[1];
+          rc.deleteddata = ORMExecuteQuery( "SELECT COUNT( mainEntity.id ) AS total FROM #lCase( rc.entity )# AS mainEntity WHERE mainEntity.deleted = :deleted", { "deleted" = true } )[1];
+
+          if( rc.showdeleted )
+          {
+            rc.recordCounter = rc.deleteddata;
+          }
+        }
+      }
+    }
+
+    rc.allColumns = {};
+
+    indexNr = 0;
+
+    for( key in rc.properties )
+    {
+      property = rc.properties[key];
+      orderNr++;
+      rc.allColumns[property.name] = property;
+      rc.allColumns[property.name].columnIndex = orderNr;
+      if( structKeyExists( property, "inlist" ))
+      {
+        indexNr++;
+        columnsInList[indexNr] = property.name;
+      }
+    }
+
+    if( len( trim( variables.listitems )))
+    {
+      columnsInList = [];
+      for( local.listItem in variables.listitems )
+      {
+        arrayAppend( columnsInList, local.listItem );
+      }
+    }
+
+    numberOfColumns = arrayLen( columnsInList );
+
+    for( columnName in columnsInList )
+    {
+      try
+      {
+        if( structKeyExists( rc.allColumns, columnName ))
+        {
+          property = rc.allColumns[columnName];
+          arrayAppend( rc.columns, {
             name = columnName,
             orderNr = structKeyExists( property, "cfc" )?0:property.columnIndex,
             orderInList = structKeyExists( property, "orderinlist" )?property.orderinlist:numberOfColumns++,
             class = structKeyExists( property, "class" )?property.class:'',
             data = property
-          }) />
-        </cfif>
-        <cfcatch>
-          <cfdump var="#cfcatch#" />
-          <cfabort />
-        </cfcatch>
-      </cftry>
-    </cfloop>
-
-    <cfscript>
-      // sort the array based on the orderInList value in the structures:
-      for( var i=1; i lte arrayLen( rc.columns ); i++ )
-      {
-        for( var j=(i-1)+1; j gt 1; j-- )
-        {
-          if( rc.columns[j].orderInList lt rc.columns[j-1].orderInList )
-          {
-            // swap values
-            var temp = rc.columns[j];
-            rc.columns[j] = rc.columns[j-1];
-            rc.columns[j-1] = temp;
-          }
+          });
         }
       }
-    </cfscript>
-  </cffunction>
+      catch( any e )
+      {
+        writeDump( cfcatch );
+        abort;
+      }
+    }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="import" access="public" output="false" returntype="void">
-    <cfset rc.fallbackView = "common:elements/import" />
-  </cffunction>
+    // sort the array based on the orderInList value in the structures:
+    for( var i=1; i lte arrayLen( rc.columns ); i++ )
+    {
+      for( var j=(i-1)+1; j gt 1; j-- )
+      {
+        if( rc.columns[j].orderInList lt rc.columns[j-1].orderInList )
+        {
+          // swap values
+          var temp = rc.columns[j];
+          rc.columns[j] = rc.columns[j-1];
+          rc.columns[j-1] = temp;
+        }
+      }
+    }
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="new" access="public" output="false" returntype="void">
-    <cfif not rc.auth.role.can( "change", fw.getSection())>
-      <cfset session.alert = {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function new( rc )
+  {
+    if( not rc.auth.role.can( "change", fw.getSection()))
+    {
+      session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
-      } />
-      <cfset fw.redirect( "admin:#fw.getSection()#.default" ) />
-    </cfif>
-    <cfreturn edit( rc = rc ) />
-  </cffunction>
+      };
+      fw.redirect( "admin:#fw.getSection()#.default" );
+    }
+    return edit( rc = rc );
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="view" access="public" output="false" returntype="void">
-    <cfset rc.editable = false />
-    <cfreturn edit( rc = rc ) />
-  </cffunction>
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function view( rc )
+  {
+    rc.editable = false;
+    return edit( rc = rc );
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="edit" access="public" output="false" returntype="void">
-    <cfparam name="rc.modal" default="false" />
-    <cfparam name="rc.editable" default="true" />
-    <cfparam name="rc.inline" default="false" />
-    <cfparam name="rc.namePrepend" default="" />
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function edit( rc )
+  {
+    param name="rc.modal" default="false";
+    param name="rc.editable" default="true";
+    param name="rc.inline" default="false";
+    param name="rc.namePrepend" default="";
 
-    <cfset rc.columns = [] />
-  	<cfset rc.entity = variables.entity />
+    rc.columns = [];
+  	rc.entity = variables.entity;
+    rc.submitButtons = variables.submitButtons;
 
-    <cfset rc.submitButtons = variables.submitButtons />
+  	if( rc.modal )
+    {
+  	  request.layout = false;
+      rc.fallbackView = "common:elements/modaledit";
 
-  	<cfif rc.modal>
-  	  <cfset request.layout = false />
-      <cfset rc.fallbackView = "common:elements/modaledit" />
-      <cfif rc.inline>
-        <cfset rc.fallbackView = "common:elements/inlineedit" />
-      </cfif>
-  	<cfelse>
-      <cfset rc.fallbackView = "common:elements/edit" />
-  	</cfif>
+      if( rc.inline )
+      {
+        rc.fallbackView = "common:elements/inlineedit";
+      }
+    }
+  	else
+    {
+      rc.fallbackView = "common:elements/edit";
+  	}
 
-    <cfset var property = "" />
-    <cfset var indexNr = 0 />
-    <cfset var columnsinform = [] />
-    <cfset var propertyOwner = {} />
-    <cfset var object = entityNew( "#rc.entity#" ) />
-    <cfset var propertiesInForm = [] />
+    var property = "";
+    var indexNr = 0;
+    var columnsInForm = [];
+    var propertyOwner = {};
+    var object = entityNew( rc.entity );
+    var propertiesInForm = [];
 
-    <cfset rc.entityProperties = getMetaData( object ) />
+    rc.entityProperties = getMetaData( object );
+    rc.canBeLogged = rc.config.log;
 
-    <cfset rc.canBeLogged = rc.config.log />
+    if( rc.entity eq "logentry" )
+    {
+      rc.canBeLogged = false;
+    }
 
-    <cfif rc.entity eq "logentry">
-      <cfset rc.canBeLogged = false />
-    </cfif>
+    rc.properties = object.getInheritedProperties();
 
-    <cfset rc.properties = object.getInheritedProperties() />
+    for( key in rc.properties )
+    {
+      if( structKeyExists( rc.properties[key], "inform" ))
+      {
+        arrayAppend( propertiesInForm, rc.properties[key] );
+      }
+    }
 
-    <cfloop collection="#rc.properties#" item="key">
-      <cfif structKeyExists( rc.properties[key], "inform" )>
-        <!--- cfset rc.properties[key].editable = true / --->
-        <cfset arrayAppend( propertiesInForm, rc.properties[key] ) />
-      </cfif>
-    </cfloop>
+    var numberOfPropertiesInForm = arrayLen( propertiesInForm ) + 10;
 
-    <cfset var numberOfPropertiesInForm = arrayLen( propertiesInForm ) + 10 />
+    rc.hideDelete = structKeyExists( rc.entityProperties, "hideDelete" );
 
-    <cfset rc.hideDelete = structKeyExists( rc.entityProperties, "hideDelete" ) />
+    if( structKeyExists( rc, "#rc.entity#id" ) and not len( trim( rc["#rc.entity#id"] )))
+    {
+      structDelete( rc, "#rc.entity#id" );
+    }
 
-    <cfif structKeyExists( rc, "#rc.entity#id" ) and not len( trim( rc["#rc.entity#id"] ))>
-      <cfset structDelete( rc, "#rc.entity#id" ) />
-    </cfif>
+    if( structKeyExists( rc, "#rc.entity#id" ))
+    {
+      rc.data = entityLoadByPK( rc.entity, rc["#rc.entity#id"] );
+      if( not isDefined( "rc.data" ))
+      {
+        fw.redirect( rc.entity );
+      }
+    }
+    else
+    {
+      rc.data = entityNew( rc.entity );
+    }
 
-    <cfif structKeyExists( rc, "#rc.entity#id" )>
-      <cfset rc.data = entityLoadByPK( "#rc.entity#", rc["#rc.entity#id"] ) />
-      <cfif not isDefined( "rc.data" )>
-        <cfset fw.redirect( rc.entity ) />
-      </cfif>
-    <cfelse>
-      <cfset rc.data = entityNew( "#rc.entity#" ) />
-    </cfif>
+    if( not isDefined( "rc.data" ))
+    {
+      rc.data = entityNew( rc.entity );
+    }
 
-    <cfif not isDefined( "rc.data" )>
-      <cfset rc.data = entityNew( "#rc.entity#" ) />
-    </cfif>
+    for( property in propertiesInForm )
+    {
+      if( structKeyExists( property, "orderinform" ) and isNumeric( property.orderinform ))
+      {
+        indexNr = property.orderinform;
+      }
+      else
+      {
+        indexNr = numberOfPropertiesInForm++;
+      }
 
-    <cfloop array="#propertiesInForm#" index="property">
-      <cfif structKeyExists( property, "orderinform" ) and isNumeric( property.orderinform )>
-        <cfset indexNr = property.orderinform />
-      <cfelse>
-        <cfset indexNr = numberOfPropertiesInForm++ />
-      </cfif>
+      columnsInForm[indexNr] = property;
+      local.savedValue = evaluate( "rc.data.get#property.name#()" );
 
-      <cfset columnsinform[indexNr] = property />
-      <cfset local.savedValue = evaluate( "rc.data.get#property.name#()" ) />
+      if( not isNull( local.savedValue ))
+      {
+        if( isArray( local.savedValue ))
+        {
+          local.savedValueList = "";
+          for( local.individualValue in local.savedValue )
+          {
+            local.savedValueList = listAppend( local.savedValueList, local.individualValue.getID() );
+          }
+          local.savedValue = local.savedValueList;
+        }
 
-      <cfif not isNull( local.savedValue )>
-        <cfif isArray( local.savedValue )>
-          <cfset local.savedValueList = "" />
-          <cfloop array="#local.savedValue#" index="local.individualValue">
-            <cfset local.savedValueList = listAppend( local.savedValueList, local.individualValue.getID() ) />
-          </cfloop>
-          <cfset local.savedValue = local.savedValueList />
-        </cfif>
-        <cfset columnsinform[indexNr].saved = local.savedValue />
-      <cfelseif structKeyExists( rc, property.name )>
-        <cfset columnsinform[indexNr].saved = rc[property.name] />
-      <cfelse>
-        <cfset columnsinform[indexNr].saved = "" />
-      </cfif>
-    </cfloop>
+        columnsInForm[indexNr].saved = local.savedValue;
+      }
+      else if( structKeyExists( rc, property.name ))
+      {
+        columnsInForm[indexNr].saved = rc[property.name];
+      }
+      else
+      {
+        columnsInForm[indexNr].saved = "";
+      }
+    }
 
-    <cfloop array="#columnsinform#" index="columnInForm">
-      <cfif not isNull( columnInForm )>
-        <cfset arrayAppend( rc.columns, columnInForm ) />
-      </cfif>
-    </cfloop>
-  </cffunction>
+    for( columnInForm in columnsInForm )
+    {
+      if( not isNull( columnInForm ))
+      {
+        arrayAppend( rc.columns, columnInForm );
+      }
+    }
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="delete" access="public" output="false" returntype="void">
-    <cfif not rc.auth.role.can( "delete", fw.getSection())>
-      <cfset session.alert = {
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function delete( rc )
+  {
+    if( not rc.auth.role.can( "delete", fw.getSection()))
+    {
+      session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
-      } />
-      <cfset fw.redirect( "admin:#fw.getSection()#.default" ) />
-    </cfif>
+      };
+      fw.redirect( "admin:#fw.getSection()#.default" );
+    }
 
-    <cfset var entityToDelete = entityLoadByPK( "#variables.entity#", rc["#variables.entity#id"] ) />
-    <cfif isDefined( "entityToDelete" )>
-      <cfset entityToDelete.setDeleted( true ) />
+    var entityToDelete = entityLoadByPK( "#variables.entity#", rc["#variables.entity#id"] );
 
-      <cfif entityToDelete.hasProperty( "log" )>
-        <cfset local.logentry = entityNew( "logentry", { entity = entityToDelete } ) />
-        <cfset local.logaction = entityLoad( "logaction", { name = "removed" }, true ) />
-        <cfset rc.log = local.logentry.enterIntoLog( action = local.logaction ) />
-      </cfif>
-    </cfif>
+    if( not isNull( entityToDelete ))
+    {
+      entityToDelete.setDeleted( true );
 
-    <cfset fw.redirect( ".default" ) />
-  </cffunction>
+      if( entityToDelete.hasProperty( "log" ))
+      {
+        local.logentry = entityNew( "logentry", { entity = entityToDelete } );
+        local.logaction = entityLoad( "logaction", { name = "removed" }, true );
+        rc.log = local.logentry.enterIntoLog( action = local.logaction );
+      }
+    }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="restore" access="public" output="false" returntype="void">
-    <cfset var entityToRestore = entityLoadByPK( "#variables.entity#", rc["#variables.entity#id"] ) />
-    <cfif isDefined( "entityToRestore" )>
-      <cfset entityToRestore.setDeleted( false ) />
+    fw.redirect( ".default" );
+  }
 
-      <cfif entityToRestore.hasProperty( "log" )>
-        <cfset local.logentry = entityNew( "logentry", { entity = entityToRestore } ) />
-        <cfset local.logaction = entityLoad( "logaction", { name = "restored" }, true ) />
-        <cfset rc.log = local.logentry.enterIntoLog( action = local.logaction ) />
-      </cfif>
-    </cfif>
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function restore( rc )
+  {
+    var entityToRestore = entityLoadByPK( "#variables.entity#", rc["#variables.entity#id"] );
 
-    <cfset fw.redirect( ".view", "#variables.entity#id" ) />
-  </cffunction>
+    if( not isNull( entityToRestore ))
+    {
+      entityToRestore.setDeleted( false );
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="save" access="public" output="false" returntype="void">
-    <cfargument name="rc" />
+      if( entityToRestore.hasProperty( "log" ))
+      {
+        local.logentry = entityNew( "logentry", { entity = entityToRestore } );
+        local.logaction = entityLoad( "logaction", { name = "restored" }, true );
+        rc.log = local.logentry.enterIntoLog( action = local.logaction );
+      }
+    }
 
-    <cfif structCount( form ) eq 0>
-      <cfset session.alert = {
+    fw.redirect( ".view", "#variables.entity#id" );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function save( rc )
+  {
+    if( structCount( form ) eq 0 )
+    {
+      session.alert = {
         "class" = "danger",
         "text"  = "global-form-error"
-      } />
-      <cfset fw.redirect( "admin:#fw.getSection()#.default" ) />
-    </cfif>
+      };
+      fw.redirect( "admin:#fw.getSection()#.default" );
+    }
 
-    <cfif not rc.auth.role.can( "change", fw.getSection())>
-      <cfset session.alert = {
+    if( not rc.auth.role.can( "change", fw.getSection()))
+    {
+      session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
-      } />
-      <cfset fw.redirect( "admin:#fw.getSection()#.default" ) />
-    </cfif>
+      };
+      fw.redirect( "admin:#fw.getSection()#.default" );
+    }
 
-    <!--- Load existing, or create a new entity --->
-    <cfif structKeyExists( rc, "#variables.entity#id" )>
-      <cfset rc.data = entityLoadByPK( variables.entity, rc["#variables.entity#id"] ) />
-    <cfelse>
-      <cfset rc.data = entityNew( variables.entity ) />
-      <cfset entitySave( rc.data ) />
-    </cfif>
+    // Load existing, or create a new entity
+    if( structKeyExists( rc, "#variables.entity#id" ))
+    {
+      rc.data = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
+    }
+    else
+    {
+      rc.data = entityNew( variables.entity );
+      entitySave( rc.data );
+    }
 
-    <!--- Log create/update time and user if object supprts it: --->
-    <cfset rc.data = rc.data.save( formData = form ) />
+    // Log create/update time and user if( object supprts it:
+    rc.data = rc.data.save( formData = form );
 
-    <cfif not ( structKeyExists( rc, "dontredirect" ) and rc.dontredirect )>
-      <cfif structKeyExists( rc, "returnto" )>
-        <cfset fw.redirect( rc.returnto ) />
-      <cfelse>
-        <cfset fw.redirect( ".default" ) />
-      </cfif>
-    </cfif>
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="upload" access="public" output="false" returntype="void">
-    <cfset var recordToImport = "" />
-    <cfset var importedCSVFile = "" />
-    <cfset var i = 0 />
-    <cfset var field = "" />
-    <cfset var newRecord = "" />
-
-    <cffile action="upload" fileField="form.upload" nameConflict="MakeUnique" destination="#getTempDirectory()#" />
-    <cffile action="read" file="#getTempDirectory()#/#cffile.serverFile#" variable="importedCSVFile" />
-
-    <cfset var arrData = rc.util.csvToArray( importedCSVFile ) />
-
-    <cfif arrayLen( arrData ) lte 1>
-      No Records in CSV file.
-    <cfelse>
-      <cfset var fieldsToImportTo = duplicate( arrData[1] ) />
-      <cfset arrayDeleteAt( arrData, 1 ) />
-
-
-        <cfset local.prevRecords = entityLoad( "#variables.entity#" ) />
-        <cfloop array="#local.prevRecords#" index="local.prevRecord">
-          <cfset entityDelete( local.prevRecord ) />
-        </cfloop>
-
-        <cfset ORMFlush() />
-
-        <cfloop array="#arrData#" index="recordToImport">
-          <cfif arrayLen( recordToImport ) neq arrayLen( fieldsToImportTo )>
-            <cfcontinue />
-          </cfif>
-
-          <cfset newRecord = entityNew( "#variables.entity#" ) />
-          <cfset entitySave( newRecord ) />
-
-          <cfset i = 0 />
-          <cfloop array="#fieldsToImportTo#" index="field">
-            <cfset i++ />
-            <cftry>
-              <cfset evaluate( "rc.data.set#field#(recordToImport[i])" ) />
-              <cfcatch></cfcatch>
-            </cftry>
-          </cfloop>
-        </cfloop>
-
-    </cfif>
-
-    <br />DONE.
-    <cfabort />
-  </cffunction>
-</cfcomponent>
+    if( not ( structKeyExists( rc, "dontredirect" ) and rc.dontredirect ))
+    {
+      if( structKeyExists( rc, "returnto" ))
+      {
+        fw.redirect( rc.returnto );
+      }
+      else
+      {
+        fw.redirect( ".default" );
+      }
+    }
+  }
+}

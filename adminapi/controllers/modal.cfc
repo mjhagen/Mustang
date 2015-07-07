@@ -1,24 +1,37 @@
-<cfcomponent extends="apibase">
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="before">
-    <cfargument name="rc">
+component extends="apibase"
+{
+  public void function before( rc )
+  {
+    super.before( rc = rc );
 
-    <cfset super.before( rc=rc ) />
+    if( structKeyExists( rc, "modalContentAsJSON" ) and len( trim( rc.modalContentAsJSON )) and isJSON( rc.modalContentAsJSON ))
+    {
+      rc.modalContent = deserializeJSON( rc.modalContentAsJSON );
+    }
 
-    <cfparam name="rc.modalContent" default="#{title='',body='',buttons=[{title='close',classes='btn-primary btn-modal-close'}]}#" />
+    param name = "rc.modalContent" default = {
+      title = '',
+      body = '',
+      buttons = [
+        {
+          title = 'close',
+          classes = 'btn-primary btn-modal-close'
+        }
+      ]
+    };
 
-    <cfif structKeyExists( rc, "content" )>
-      <cfset rc.modalContent.title = rc.content.getTitle() />
-      <cfset rc.modalContent.body = rc.content.getBody() />
-    </cfif>
-  </cffunction>
+    if( structKeyExists( rc, "content" ))
+    {
+      rc.modalContent.title = rc.content.getTitle();
+      rc.modalContent.body = rc.content.getBody();
+    }
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="open">
-    <cfargument name="rc">
-
-    <cfswitch expression="#rc.type#">
-      <cfdefaultcase></cfdefaultcase>
-    </cfswitch>
-  </cffunction>
-</cfcomponent>
+  public void function open( rc )
+  {
+    // switch( rc.type )
+    // {
+    //   default: break;
+    // }
+  }
+}

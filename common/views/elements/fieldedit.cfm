@@ -7,6 +7,8 @@
 <cfparam name="rc.modal" default="false" />
 
 <cfset local.formElementName = local.namePrepend & local.column.name />
+<cfset local.fieldAttributes = 'id="#local.idPrepend##local.column.name#"' />
+
 <cfif structKeyExists( local.column, "entityName" )>
   <cfset local.columnEntityName = local.column.entityName />
 </cfif>
@@ -78,33 +80,17 @@
       <div id="#local.column.name#_inlineedit" class="inlineedit">
         <a class="btn btn-sm btn-primary inlineedit-modal-trigger" href="#buildURL( 'admin:' & local.columnEntityName & '.new?modal=1' & ( structKeyExists( rc, '#rc.entity#id' ) ? '&fk=#rc['#rc.entity#id']#' : '' ) & '&source=' & local.column.fkColumn )#" data-target="##modal-dialog" data-field="#structKeyExists( local.column, 'singularName' )?local.column.singularName:local.column.name#">#i18n.translate( 'add-#local.column.name#' )#</a>
       </div>
-    <cfelseif structKeyExists( local.column, "typeahead" )>
-      <cfset local.fieldAttributes = 'class="form-control typeahead#structKeyExists( local.column, 'tagsinput' )?' tagsinput':''#" id="#local.idPrepend##local.column.name#" placeholder="#i18n.translate('placeholder-#local.column.name#')#"' />
-
-      <cfif structKeyExists( local.column, "tagsinput" )>
-        <cfset local.savedList = "" />
-        <cfif isSimpleValue( local.column.saved )>
-          <cfloop list="#local.column.saved#" index="local.savedID">
-            <cfset local.savedObject = entityLoadByPK( "#local.columnEntityName#", local.savedID ) />
-            <cfif isDefined( "local.savedObject" )>
-              <cfset local.savedList = listAppend( local.savedList, local.savedObject.getName() ) />
-            </cfif>
-          </cfloop>
-        </cfif>
-        <div style="width:100%">
-          <input #local.fieldAttributes# type="text" name="#local.formElementName#_tagsinput" value="#local.savedList#" data-source="#local.columnEntityName#"#structKeyExists( local.column, 'searchfields' )?' data-fields="#local.column.searchfields#"':''# />
-        </div>
-      <cfelse>
-  	<!--- one-to-many autocomplete --->
-  	<!--- TODO: complete this --->
-        <cfset local.savedObj = entityLoadByPK( "#local.columnEntityName#", local.column.saved ) />
-        <cfif not isNull( local.savedObj )>
-          <cfset local.column.saved = local.savedObj.getName() />
-        <cfelse>
-          <cfset local.column.saved = "" />
-        </cfif>
-        <input #local.fieldAttributes# type="text" name="#local.formElementName#" value="#local.column.saved#" data-source="#local.columnEntityName#" />
-      </cfif>
+    <cfelseif structKeyExists( local.column, "autocomplete" )>
+      #view( 'common:form/select', {
+        "id"          = "#local.idPrepend##local.column.name#",
+        "class"       = "autocomplete",
+        "name"        = local.formElementName,
+        "data"        = {
+                          "entity"  = "#local.columnEntityName#"
+                        },
+        "placeholder" = i18n.translate('placeholder-#local.column.name#'),
+        "selected"    = local.column.saved
+      })#
     <cfelseif local.column.fieldtype contains "to-many">
       <cfset local.checkedOption = "" />
       <cfif structKeyExists( local.column, "saved" )>
@@ -177,12 +163,19 @@
         <cfset local.selects = ORMExecuteQuery( "FROM #local.columnEntityName# WHERE deleted=FALSE AND parent=NULL ORDER BY sortorder" ) />
         <cfloop array="#local.selects#" index="local.select">
           <cfset local.viewOptions = { options = local.select.getChildren(), selected = local.selectedOption } />
-          <select class="form-control#structKeyExists( local.column, 'affectsform' )?' affectsform':''##structKeyExists( local.column, 'affected' )?' affected #local.select.getName()#':''#"
-                  id="#local.idPrepend##local.column.name#"
-                  name="#local.formElementName#"
-                  data-optionfilter="#local.select.getID()#">
-            #view( "common:elements/recursive-option", local.viewOptions )#
-          </select>
+          <cfset local.classNames = local.select.getName() />
+          <cfif structKeyExists( local.column, "affectsform" )><cfset listAppend( local.classNames, affectsform, " " ) /></cfif>
+          <cfif structKeyExists( local.column, "affected" )><cfset listAppend( local.classNames, affected, " " ) /></cfif>
+
+          #view( 'common:form/select', {
+            "id"        = "#local.idPrepend##local.column.name#",
+            "name"      = local.formElementName,
+            "class"     = local.classNames,
+            "data"      = {
+              "optionfilter" = local.select.getID()
+            },
+            "contents"  = view( "common:elements/recursive-option", local.viewOptions )
+          })#
         </cfloop>
       <cfelse>
         <cfquery dbtype="hql" name="local.options" ormoptions="#{cacheable=true}#">
@@ -209,16 +202,22 @@
           ORDER BY  sortorder
         </cfquery>
 
-        <select class="form-control#structKeyExists( local.column, 'affectsform' )?' affectsform':''#"
-                id="#local.idPrepend##local.column.name#"
-                name="#local.formElementName#">
-          <cfif ( local.column.fieldtype contains "to-one" and not structKeyExists( local.column, 'required' )) or local.allowBlank>
-            <option value="">#i18n.translate( local.chooseLabel )#</option>
-          </cfif>
-          <cfloop array="#local.options#" index="local.option">
-            <option data-name="#local.option.getName()#" value="#local.option.getID()#"#listFind( local.selectedOption, local.option.getID())?' selected="selected"':''##structKeyExists( local.column, 'affectsform' )?' data-fieldlist="#local.option.getFieldList()#"':''#>#structKeyExists( local.column, "translateOptions" )?i18n.translate(local.option.getName()):local.option.getName()#</option>
-          </cfloop>
-        </select>
+        #view( 'common:form/select', {
+          "id"                = "#local.idPrepend##local.column.name#",
+          "name"              = local.formElementName,
+          "class"             = structKeyExists( local.column, "affectsform" ) ? " affectsform" : "",
+          "options"           = local.options,
+          "selected"          = local.selectedOption,
+          "translateOptions"  = structKeyExists( local.column, "translateOptions" ),
+          "affectsform"       = structKeyExists( local.column, "affectsform" ),
+          "choose"            = (
+                                  (
+                                    local.column.fieldtype contains "to-one" and
+                                    not structKeyExists( local.column, "required" )
+                                  ) or
+                                  local.allowBlank
+                                ) ? local.chooseLabel : ""
+        })#
       </cfif>
     </cfif>
   <cfelseif structKeyExists( local.column, "ORMType" ) and local.column.ORMType eq "Boolean">
@@ -236,7 +235,7 @@
       /> #i18n.translate( local.column.name )#
     </label></div>
   <cfelse>
-    <cfset local.fieldAttributes = 'id="#local.idPrepend##local.column.name#" placeholder="#i18n.translate('placeholder-#local.column.name#')#"' />
+    <cfset local.fieldAttributes &= ' placeholder="#i18n.translate('placeholder-#local.column.name#')#"' />
 
     <cfif structKeyExists( local.column, "formfield" )>
       <cfswitch expression="#local.column.formfield#">
@@ -272,6 +271,12 @@
           </div>
         </cfcase>
       </cfswitch>
+    <cfelseif structKeyExists( local.column , 'editor' )>
+      #view( 'common:form/#local.column.editor#', {
+        "id"          = "#local.idPrepend##local.column.name#",
+        "name"        = local.formElementName,
+        "saved"       = local.column.saved
+      })#
     <cfelseif (
       structKeyExists( local.column, "dataType" ) and
       local.column.dataType eq "json"
@@ -283,9 +288,14 @@
       structKeyExists( local.column.data, "dataType" ) and
       local.column.data.dataType eq "json"
     )>
+      <cfset local.saved = local.column.saved />
+      <cfif not isSimpleValue( local.saved )>
+        <cfset local.saved = "" />
+      </cfif>
+
       <div class="jsoneditorblock">
-        <div class="jsoncontainer" data-value="#toBase64( local.column.saved )#"></div>
-        <input type="hidden" name="#local.formElementName#" value="#htmlEditFormat( local.column.saved )#" />
+        <div class="jsoncontainer" data-value="#toBase64( local.saved )#"></div>
+        <input type="hidden" name="#local.formElementName#" value="#htmlEditFormat( local.saved )#" />
       </div>
     <cfelse>
       <cfset local.fieldAttributes &= ' class="form-control" name="#local.formElementName#"' />

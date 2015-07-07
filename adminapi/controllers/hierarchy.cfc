@@ -6,7 +6,8 @@ component extends="apibase"
     param name="rc.id" default="null";
 
     var selection = {
-      "parent" = entityLoadByPK( rc.entity, rc.id )
+      "parent" = entityLoadByPK( rc.entity, rc.id ),
+      "deleted" = false
     };
 
     var items = entityLoad( rc.entity, selection );
@@ -24,7 +25,8 @@ component extends="apibase"
           "id" = item.getID(),
           "hasChildren" = item.hasChild(),
           "data-editurl" = fw.buildURL( "admin:#rc.entity#.edit?#rc.entity#id=#item.getID()#" ),
-          "data-addurl" = fw.buildURL( "admin:#rc.entity#.new?parent=#item.getID()#" )
+          "data-addurl" = fw.buildURL( "admin:#rc.entity#.new?parent=#item.getID()#" ),
+          "data-removeurl" = fw.buildURL( "admin:#rc.entity#.delete?#rc.entity#id=#item.getID()#" )
         }
       });
     }

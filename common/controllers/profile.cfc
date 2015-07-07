@@ -72,26 +72,24 @@
       <cfset fw.redirect( '.password' ) />
     </cfif>
 
-    <cftransaction>
-      <cfset var currentUser = entityLoadByPK( "contact", rc.auth.userid ) />
-      <cfif isDefined( "currentUser" )>
-        <cfset currentUser.setPassword( rc.util.hashPassword( rc.newPassword )) />
-        <cflock scope="session" timeout="5">
-          <cfset session.alert = {
-            "class"           = "success",
-            "text"            = "password-changed",
-            "stringVariables" = { "newPassword" = rc.newPassword }
-          } />
-        </cflock>
-      <cfelse>
-        <cflock scope="session" timeout="5">
-          <cfset session.alert = {
-            "class"           = "danger",
-            "text"            = "password-change-failed"
-          } />
-        </cflock>
-      </cfif>
-    </cftransaction>
+    <cfset var currentUser = entityLoadByPK( "contact", rc.auth.userid ) />
+    <cfif isDefined( "currentUser" )>
+      <cfset currentUser.setPassword( rc.util.hashPassword( rc.newPassword )) />
+      <cflock scope="session" timeout="5">
+        <cfset session.alert = {
+          "class"           = "success",
+          "text"            = "password-changed",
+          "stringVariables" = { "newPassword" = rc.newPassword }
+        } />
+      </cflock>
+    <cfelse>
+      <cflock scope="session" timeout="5">
+        <cfset session.alert = {
+          "class"           = "danger",
+          "text"            = "password-change-failed"
+        } />
+      </cflock>
+    </cfif>
 
     <cfset fw.redirect( '.password' ) />
   </cffunction>
