@@ -124,7 +124,11 @@ component
 
     if( not rc.dontRedirect )
     {
-      var loginscript = local.user.getLoginScript();
+      var role = local.user.getSecurityRole();
+      if( not isNull( role ))
+      {
+        var loginscript = role.getLoginScript();
+      }
 
       if( isNull( loginscript ) or not len( trim( loginscript )))
       {
