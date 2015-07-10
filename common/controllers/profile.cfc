@@ -27,8 +27,7 @@
     <cfparam name="rc.infix" default="" />
     <cfparam name="rc.lastname" default="" />
     <cfparam name="rc.email" default="" />
-    <cfparam name="rc.phone_mobile" default="" />
-    <cfparam name="rc.phone_direct" default="" />
+    <cfparam name="rc.phone" default="" />
     <cfparam name="rc.photo" default="" />
 
     <cfset formFields = {
@@ -36,8 +35,7 @@
       "infix"         = rc.infix,
       "lastname"      = rc.lastname,
       "email"         = rc.email,
-      "phone_mobile"  = rc.phone_mobile,
-      "phone_direct"  = rc.phone_direct,
+      "phone"         = rc.phone,
       "contactID"     = currentUser.getID()
 	  }>
 

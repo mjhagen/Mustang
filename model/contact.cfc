@@ -1,23 +1,28 @@
-component extends="basecfc.base"
+component extends="root.model.logged"
           persistent="true"
+          table="contact"
+          discriminatorvalue="contact"
 {
-  property name="username" fieldType="column" ORMType="string" length="64" inform=true orderinform=1 editable=true inlist=true;
+  property name="username" fieldType="column" ORMType="string" length="64" inform=1 orderinform=1 editable=1 inlist=1;
   property name="password" fieldType="column" ORMType="string" length="144" type="string";
 
-  property name="firstname" fieldType="column" ORMType="string" length="32" inform=true orderinform=2 editable=true;
-  property name="infix" fieldType="column" ORMType="string" length="16" inform=true orderinform=3 editable=true;
-  property name="lastname" fieldType="column" ORMType="string" length="64" inform=true orderinform=4 editable=true;
+  property name="firstname" fieldType="column" ORMType="string" length="32" inform=1 orderinform=2 editable=1;
+  property name="infix" fieldType="column" ORMType="string" length="16" inform=1 orderinform=3 editable=1;
+  property name="lastname" fieldType="column" ORMType="string" length="64" inform=1 orderinform=4 editable=1;
 
-  property name="email" fieldType="column" ORMType="string" length="128" inform=true orderinform=5 editable=true;
+  property name="email" fieldType="column" ORMType="string" length="128" inform=1 orderinform=5 editable=1;
 
-  property name="lastLoginDate" fieldType="column" ORMType="timestamp" inlist=true;
+  property name="phone" fieldType="column" ORMType="string" length="16" inform=1 orderinform=6 editable=1;
+  property name="photo" fieldType="column" ORMType="string" length="128" inform=1 orderinform=7 editable=1;
+  property name="lastLoginDate" fieldType="column" ORMType="timestamp" inlist=1;
 
-  property name="name" persistent="false" inlist=true;
+  property name="name" persistent="false" inlist=1;
 
-  property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid" inform=true editable=true;
-  // property name="createdObjects" singularName="createdObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="createcontactid";
-  // property name="updatedObjects" singularName="updatedObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="updatecontactid";
+  property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid" inform=1 editable=1;
+  property name="createdObjects" singularName="createdObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="createcontactid";
+  property name="updatedObjects" singularName="updatedObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="updatecontactid";
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public string function getFullname()
   {
     var result = getFirstname() & ' ' & trim( getInfix() & ' ' & getLastname());
@@ -30,6 +35,7 @@ component extends="basecfc.base"
     return result;
   }
 
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public string function getName()
   {
     return getFullname();

@@ -290,13 +290,14 @@
     )>
       <cfset local.saved = local.column.saved />
       <cfif not isSimpleValue( local.saved )>
-        <cfset local.saved = "" />
+        <cfset local.saved = serializeJSON( local.saved ) />
       </cfif>
 
       <div class="jsoneditorblock">
         <div class="jsoncontainer" data-value="#toBase64( local.saved )#"></div>
         <input type="hidden" name="#local.formElementName#" value="#htmlEditFormat( local.saved )#" />
       </div>
+
     <cfelse>
       <cfset local.fieldAttributes &= ' class="form-control" name="#local.formElementName#"' />
       <cfparam name="local.column.saved" default="" />

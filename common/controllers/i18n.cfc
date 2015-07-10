@@ -51,6 +51,11 @@ component output="false"
 
       var language = entityLoadByPK( "language", languageid );
 
+      if( isNull( language ) and len( trim( defaultLanguage )))
+      {
+        language = entityLoad( "language", { "code" = defaultLanguage }, true );
+      }
+
       if( isNull( language ))
       {
         language = entityNew( "language" );

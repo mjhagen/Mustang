@@ -39,7 +39,7 @@ component extends="framework.one"
   this.ormEnabled = true;
   this.ormsettings = {
     CFCLocation = "/root/model",
-    DBCreate = ( variables.live ? ( request.reset ? "update" : "none" ) : ( request.reset ? "update" : "dropcreate" )),
+    DBCreate = ( variables.live ? ( request.reset ? "update" : "none" ) : ( request.reset ? "dropcreate" : "update" )),
     logSQL = variables.live ? false : true,
     sqlscript = request.context.config.nukescript,
     secondaryCacheEnabled = variables.live ? true : false,
@@ -217,7 +217,7 @@ component extends="framework.one"
       "reloadpw"          = "1",
       "disableSecurity"   = true,
       "fileUploads"       = expandPath( "../ProjectsTemporaryFiles/files_" & request.appname ),
-      "defaultLanguage"   = "nl_NL",
+      "defaultLanguage"   = "en_US",
       "securedSubsystems" = "",
       "encryptKey"        = ""
     };
