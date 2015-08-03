@@ -26,13 +26,13 @@
 
       opt = TaskOptions.init();
       opt.caption = "Diagram of ORM";
-      opt.colors = "##FF5937, black, blue";
+      opt.colors = "##FCE08B, black, blue";
 
       graph = HBMCtoGRAPH.load( opt, conf );
 
       GRAPHtoDOTtoGIF.transform(
         graph,
-        "myTest.dot", expandPath( "./output.gif" ), "#request.lmPath#\bin\graphviz-2.4\bin\dot.exe"
+        "output.dot", expandPath( "./output.gif" ), "#request.lmPath#\bin\graphviz-2.4\bin\dot.exe"
       );
     </cfscript>
     <img src="output.gif" />

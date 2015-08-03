@@ -17,21 +17,15 @@
 
     <title>#local.title#</title>
 
-
-
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css" />
     <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" />
-
     <link rel="stylesheet" href="//www.fuelcdn.com/fuelux/3.6.3/css/fuelux.min.css" />
-
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/bootstrap/theme/sb-admin-2.css" />
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/metisMenu/metisMenu.min.css" />
-
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/ladda/ladda.min.css" />
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/fileupload/jquery.fileupload.css" />
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/jsoneditor/jsoneditor.min.css" />
-
     <link rel="stylesheet" href="#getBaseURL()#/inc/css/default.css" />
     <link rel="stylesheet" href="#getBaseURL()#/inc/css/admin.css" />
 
@@ -50,6 +44,8 @@
       <cfelsE>
         var _loggable = false;
       </cfif>
+
+      var seoAjax = false;
     </script>
 
 

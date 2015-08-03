@@ -1,0 +1,1 @@
+<cfoutput>#view( 'admin:contact/edit', { 'passwordLabel' = 'password' })#</cfoutput>

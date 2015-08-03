@@ -8,7 +8,7 @@
 <cfoutput>
   <ul class="nav" id="side-menu">
     <cfif not rc.subnavHideHome>
-      <li><a#( getSection() eq 'main' )?' class="active"':''# href="#buildURL( getSubsystem() & ':main' )#">#i18n.translate( getSubsystem() & ':main.default' )#</a></li>
+      <li><a#( getSection() eq 'main' )?' class="active"':''# href="#buildURL( ':' )#">#i18n.translate( getSubsystem() & ':main.default' )#</a></li>
     </cfif>
     <cfloop list="#rc.subnav#" index="local.fqa">
       <cfif listFirst( local.fqa, '=' ) eq "external">

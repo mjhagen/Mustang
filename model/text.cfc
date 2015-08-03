@@ -1,4 +1,4 @@
-component extends="root.model.logged"
+component extends="basecfc.base"
           persistent=true
           table="text"
           discriminatorcolumn="type"

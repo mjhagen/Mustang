@@ -21,6 +21,11 @@ component output="false"
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function before( rc )
   {
+    if( not rc.auth.role.getCanAccessAdmin())
+    {
+      fw.redirect( "home:" );
+    }
+
     if( fw.getItem() eq "edit" and not rc.auth.role.can( "change", fw.getSection()))
     {
       session.alert = {
@@ -60,16 +65,16 @@ component output="false"
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function default( rc )
   {
-    param name="rc.columns" default="#[]#";
-    param name="rc.offset" default="0";
-    param name="rc.maxResults" default="30";
-    param name="rc.d" default="0";// rc.d(escending) default false (ASC)
-    param name="rc.orderby" default="";
-    param name="rc.startsWith" default="";
-    param name="rc.showdeleted" default="0";
-    param name="rc.filters" default="#[]#";
-    param name="rc.filterType" default="contains";
-    param name="rc.classColumn" default="";
+    param rc.columns      = [];
+    param rc.offset       = 0;
+    param rc.maxResults   = 30;
+    param rc.d            = 0;// rc.d(escending) default false (ASC)
+    param rc.orderby      = "";
+    param rc.startsWith   = "";
+    param rc.showdeleted  = 0;
+    param rc.filters      = [];
+    param rc.filterType   = "contains";
+    param rc.classColumn  = "";
 
     // exit controller on non crud items
     switch( fw.getSection())
@@ -81,49 +86,45 @@ component output="false"
       break;
 
       case "profile":
+        rc.data = entityLoadByPK( "contact", rc.auth.userid );
         fw.setView( 'common:profile.default' );
         return;
       break;
     }
 
-    param name="rc.lineView" default="common:elements/line";
-    param name="rc.tableView" default="common:elements/table";
-    param name="rc.fallbackView" default="common:elements/list";
+    param rc.lineView     = "common:elements/line";
+    param rc.tableView    = "common:elements/table";
+    param rc.fallbackView = "common:elements/list";
 
     // default crud behaviour continues:
     rc.entity = variables.entity;
 
-    if( not structKeyExists( ORMGetSessionFactory().getAllClassMetadata(), rc.entity ))
+    // exit with error when trying to control a non-persisted entity
+    if( not arrayFindNoCase( structKeyArray( ORMGetSessionFactory().getAllClassMetadata()), variables.entity ))
     {
-      // exit with error when trying to control a non-persisted entity
       session.alert = {
         "class" = "danger",
         "text"  = "not-an-entity-error"
       };
+
       fw.redirect( "admin:main.default" );
     }
 
-    var object = entityNew( rc.entity );
+    var object = entityNew( variables.entity );
     var entityProperties = getMetaData( object );
-    var property = "";
-    var indexNr = 0;
-    var orderNr = 0;
-    var columnName = "";
-    var columnsInList = [];
-    var orderByString = "";
-    var queryOptions = { ignorecase = true, maxResults = rc.maxResults, offset = rc.offset };
 
-    rc.recordCounter = 0;
-    rc.deleteddata   = 0;
-    rc.properties    = object.getInheritedProperties();
-    rc.lineactions   = variables.lineactions;
-    rc.listactions   = variables.listactions;
-    rc.showNavbar    = variables.showNavbar;
-    rc.showSearch    = variables.showSearch;
-    rc.showAlphabet  = variables.showAlphabet;
-    rc.showPager     = variables.showPager;
-    rc.showAsTree    = false;
+    rc.defaultSort = "";
 
+    if( structKeyExists( entityProperties, "defaultSort" ))
+    {
+      rc.defaultSort = entityProperties.defaultSort;
+    }
+    else if( structKeyExists( entityProperties.extends, "defaultSort" ))
+    {
+      rc.defaultSort = entityProperties.extends.defaultSort;
+    }
+
+    // exit out of controller if using a tree view (data retrieval goes through ajax calls instead)
     if( structKeyExists( entityProperties, "list" ))
     {
       rc.tableView  = "common:elements/" & entityProperties.list;
@@ -137,244 +138,69 @@ component output="false"
       }
     }
 
-    if( not rc.auth.role.can( "change", rc.entity ))
-    {
-      local.lineactionPointer = listFind( rc.lineactions, '.edit' );
-      if( local.lineactionPointer )
+    rc.properties     = object.getInheritedProperties();
+    rc.recordCounter  = 0;
+    rc.deleteddata    = 0;
+    rc.lineactions    = variables.lineactions;
+    rc.listactions    = variables.listactions;
+    rc.showNavbar     = variables.showNavbar;
+    rc.showSearch     = variables.showSearch;
+    rc.showAlphabet   = variables.showAlphabet;
+    rc.showPager      = variables.showPager;
+    rc.showAsTree     = false;
+    rc.allColumns     = {};
+
+    if( not structKeyExists( rc, "alldata" )){
+      var listArgs = {
+        classColumn = rc.classColumn,
+        columns     = rc.columns,
+        d           = rc.d,
+        filters     = rc.filters,
+        filterType  = rc.filterType,
+        maxResults  = rc.maxResults,
+        offset      = rc.offset,
+        orderby     = rc.orderby,
+        showdeleted = rc.showdeleted,
+        startsWith  = rc.startsWith
+      };
+
+      for( var key in rc )
       {
-        rc.lineactions = listDeleteAt( rc.lineactions, local.lineactionPointer );
+        if( not isSimpleValue( rc[key] ))
+        {
+          continue;
+        }
+
+        key = urlDecode( key );
+
+        if( listFirst( key, "_" ) eq "filter" and len( trim( rc[key] )))
+        {
+          arrayAppend( listArgs.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) });
+        }
+      }
+
+      rc.alldata = object.list( argumentsCollection = listArgs );
+    }
+
+    if( not rc.auth.role.can( "change", variables.entity ))
+    {
+      var lineactionPointer = listFind( rc.lineactions, '.edit' );
+      if( lineactionPointer )
+      {
+        rc.lineactions = listDeleteAt( rc.lineactions, lineactionPointer );
       }
     }
 
     if( structKeyExists( entityProperties, "classColumn" ) and len( trim( entityProperties.classColumn )))
     {
-      rc.classColumn = entityProperties.classColumn;
+      classColumn = entityProperties.classColumn;
     }
 
-    if( structKeyExists( entityProperties, "defaultSort" ))
-    {
-      rc.defaultSort = entityProperties.defaultSort;
-    }
-    else if( structKeyExists( entityProperties.extends, "defaultSort" ))
-    {
-      rc.defaultSort = entityProperties.extends.defaultSort;
-    }
-    else
-    {
-      rc.defaultSort = "";
-    }
-
-    if( len( trim( rc.orderby )))
-    {
-      local.vettedOrderByString = "";
-
-      for( var orderField in listToArray( rc.orderby ))
-      {
-        if( orderField contains ';' )
-        {
-          continue;
-        }
-
-        if( orderField contains ' ASC' or orderField contains ' DESC' )
-        {
-          orderField = listFirst( orderField, ' ' );
-        }
-
-        if( structKeyExists( rc.properties, orderField ))
-        {
-          local.vettedOrderByString = listAppend( local.vettedOrderByString, orderField );
-        }
-      }
-
-      rc.orderby = local.vettedOrderByString;
-
-      if( len( trim( rc.orderby )))
-      {
-        rc.defaultSort = rc.orderby & ( rc.d ? ' DESC' : '' );
-      }
-    }
-
-    rc.orderby = replaceNoCase( rc.defaultSort, ' ASC', '', 'all' );
-    rc.orderby = replaceNoCase( rc.orderby, ' DESC', '', 'all' );
-
-    if( rc.defaultSort contains ' DESC' )
-    {
-      rc.d = 1;
-    }
-    else if( rc.defaultSort contains ' ASC' )
-    {
-      rc.d = 0;
-    }
-
-    for( orderByPart in listToArray( rc.defaultSort ))
-    {
-      orderByString = listAppend( orderByString, "mainEntity.#orderByPart#" );
-    }
-
-    if( len( trim( rc.startsWith )))
-    {
-      rc.filters = [{
-        "field" = "name",
-        "filterOn" = replace( rc.startsWith, '''', '''''', 'all' )
-      }];
-      rc.filterType = "starts-with";
-    }
-
-    for( key in rc )
-    {
-      if( not isSimpleValue( rc[key] ))
-      {
-        continue;
-      }
-
-      key = urlDecode( key );
-
-      if( listFirst( key, "_" ) eq "filter" and len( trim( rc[key] )))
-      {
-        arrayAppend( rc.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) });
-      }
-    }
-
-    if( not structKeyExists( rc, "alldata" ))
-    {
-      if( arrayLen( rc.filters ))
-      {
-        var alsoFilterKeys = structFindKey( rc.properties, 'alsoFilter' );
-        var alsoFilterEntity = "";
-        var whereBlock = " WHERE 0 = 0 ";
-        var whereParameters = {};
-        var counter = 0;
-
-        if( rc.showdeleted eq 0 )
-        {
-          whereBlock &= " AND ( mainEntity.deleted IS NULL OR mainEntity.deleted = false ) ";
-        }
-
-        for( filter in rc.filters )
-        {
-          if( len( filter.field ) gt 2 and right( filter.field, 2 ) eq "id" )
-          {
-            whereBlock &= "AND mainEntity.#left( filter.field, len( filter.field ) - 2 )# = ( FROM #left( filter.field, len( filter.field ) - 2 )# WHERE id = :where_id )";
-            whereParameters["where_id"] = filter.filterOn;
-          }
-          else
-          {
-            if( filter.filterOn eq "NULL" )
-            {
-              whereBlock &= " AND ( ";
-              whereBlock &= " mainEntity.#lCase( filter.field )# IS NULL ";
-            }
-            else if( structKeyExists( rc.properties[filter.field], "cfc" ))
-            {
-              whereBlock &= " AND ( ";
-              whereBlock &= " mainEntity.#lCase( filter.field )#.id = :where_#lCase( filter.field )# ";
-              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
-            }
-            else
-            {
-              if( rc.filterType eq "contains" )
-              {
-                filter.filterOn = "%#filter.filterOn#";
-              }
-
-              filter.filterOn = "#filter.filterOn#%";
-
-              whereBlock &= " AND ( ";
-              whereBlock &= " mainEntity.#lCase( filter.field )# LIKE :where_#lCase( filter.field )# ";
-              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
-            }
-
-            for( alsoFilterKey in alsoFilterKeys )
-            {
-              if( alsoFilterKey.owner.name neq filter.field )
-              {
-                continue;
-              }
-
-              counter++;
-              alsoFilterEntity &= " LEFT JOIN mainEntity.#listFirst( alsoFilterKey.owner.alsoFilter, '.' )# AS entity_#counter# ";
-              whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#filter.filterOn#' ";
-              whereParameters["where_#listLast( alsoFilterKey.owner.alsoFilter, '.' )#"] = filter.filterOn;
-            }
-            whereBlock &= " ) ";
-          }
-        }
-
-        if( structKeyExists( entityProperties, "where" ) and len( trim( entityProperties.where )))
-        {
-          whereBlock &= entityProperties.where;
-        }
-
-        var HQLcounter  = " SELECT COUNT( mainEntity ) AS total ";
-        var HQLselector  = " SELECT mainEntity ";
-
-        HQL = "";
-        HQL &= " FROM #lCase( rc.entity )# mainEntity ";
-        HQL &= alsoFilterEntity;
-        HQL &= whereBlock;
-
-        HQLcounter = HQLcounter & HQL;
-        HQLselector = HQLselector & HQL;
-
-        if( len( trim( orderByString )))
-        {
-          HQLselector &= " ORDER BY #orderByString# ";
-        }
-
-        rc.alldata = ORMExecuteQuery( HQLselector, whereParameters, queryOptions );
-
-        if( arrayLen( rc.alldata ) gt 0 )
-        {
-          rc.recordCounter = ORMExecuteQuery( HQLcounter, whereParameters, { ignorecase = true })[1];
-        }
-      }
-      else
-      {
-        HQL = " FROM #lCase( rc.entity )# mainEntity ";
-
-        if( rc.showDeleted )
-        {
-          HQL &= " WHERE mainEntity.deleted = TRUE ";
-        }
-        else
-        {
-          HQL &= " WHERE ( mainEntity.deleted IS NULL OR mainEntity.deleted = FALSE ) ";
-        }
-
-        if( len( trim( orderByString )))
-        {
-          HQL &= " ORDER BY #orderByString# ";
-        }
-
-        try
-        {
-          rc.alldata = ORMExecuteQuery( HQL, {}, queryOptions );
-        }
-        catch( any e )
-        {
-          writeDump( e );
-          abort;
-          rc.alldata = [];
-        }
-
-        if( arrayLen( rc.alldata ) gt 0 )
-        {
-          rc.recordCounter = ORMExecuteQuery( "SELECT COUNT( e ) AS total FROM #lCase( rc.entity )# AS e WHERE e.deleted != :deleted", { "deleted" = true }, { ignorecase = true })[1];
-          rc.deleteddata = ORMExecuteQuery( "SELECT COUNT( mainEntity.id ) AS total FROM #lCase( rc.entity )# AS mainEntity WHERE mainEntity.deleted = :deleted", { "deleted" = true } )[1];
-
-          if( rc.showdeleted )
-          {
-            rc.recordCounter = rc.deleteddata;
-          }
-        }
-      }
-    }
-
-    rc.allColumns = {};
-
-    indexNr = 0;
-
-    for( key in rc.properties )
+    var columnsInList = [];
+    var property = "";
+    var indexNr = 0;
+    var orderNr = 0;
+    for( var key in rc.properties )
     {
       property = rc.properties[key];
       orderNr++;
@@ -390,35 +216,43 @@ component output="false"
     if( len( trim( variables.listitems )))
     {
       columnsInList = [];
-      for( local.listItem in variables.listitems )
+      for( var listItem in variables.listitems )
       {
-        arrayAppend( columnsInList, local.listItem );
+        arrayAppend( columnsInList, listItem );
       }
     }
 
-    numberOfColumns = arrayLen( columnsInList );
-
-    for( columnName in columnsInList )
+    if( variables.entity eq 'logged' )
     {
-      try
+      arrayAppend( columnsInList, "entityName" );
+      arrayAppend( columnsInList, "name" );
+      arrayAppend( columnsInList, "createDate" );
+      arrayAppend( columnsInList, "updateDate" );
+    }
+
+    var numberOfColumns = arrayLen( columnsInList );
+
+    try
+    {
+      for( var columnName in columnsInList )
       {
         if( structKeyExists( rc.allColumns, columnName ))
         {
-          property = rc.allColumns[columnName];
+          var property = rc.allColumns[columnName];
           arrayAppend( rc.columns, {
-            name = columnName,
-            orderNr = structKeyExists( property, "cfc" )?0:property.columnIndex,
+            name        = columnName,
+            orderNr     = structKeyExists( property, "cfc" )?0:property.columnIndex,
             orderInList = structKeyExists( property, "orderinlist" )?property.orderinlist:numberOfColumns++,
-            class = structKeyExists( property, "class" )?property.class:'',
-            data = property
+            class       = structKeyExists( property, "class" )?property.class:'',
+            data        = property
           });
         }
       }
-      catch( any e )
-      {
-        writeDump( cfcatch );
-        abort;
-      }
+    }
+    catch( any e )
+    {
+      writeDump( cfcatch );
+      abort;
     }
 
     // sort the array based on the orderInList value in the structures:
@@ -493,7 +327,7 @@ component output="false"
     var propertiesInForm = [];
 
     rc.entityProperties = getMetaData( object );
-    rc.canBeLogged = rc.config.log;
+    rc.canBeLogged = ( rc.config.log and isInstanceOf( object, "root.model.logged" ));
 
     if( rc.entity eq "logentry" )
     {

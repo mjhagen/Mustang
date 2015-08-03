@@ -51,7 +51,7 @@
 
     <cfset request.layout = false />
 
-    <cffile action="upload" fileField="form.files[]" destination="#request.fileUploads#/temp" nameConflict="makeUnique" />
+    <cffile action="upload" fileField="form.files[]" destination="#request.fileUploads#/temp/" nameConflict="makeUnique" />
 
     <cfset returnAsJSON({ "files" = [{ "name" = cffile.serverFile }]}) />
   </cffunction>

@@ -1,6 +1,6 @@
 <cfcomponent output="false">
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="init"><cfreturn this /></cffunction>
+  <cffunction name="init" output="false"><cfreturn this /></cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="nil" access="public" output="false" returntype="void"></cffunction>
@@ -46,7 +46,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="limiter">
+  <cffunction name="limiter" output="false">
     <cfargument name="duration" type="numeric" default="3" hint="Number of seconds to lock someone out after placing too many requests." />
     <cfargument name="count" type="numeric" default="6" hint="Number of hits allowed within the time span set in the 'timespan' argument." />
     <cfargument name="timespan" type="numeric" default="30" hint="Time span in which to clock the number of hits placed on the system." />
@@ -118,25 +118,6 @@
     <cfif not isBoolean( auth.isLoggedIn )><cfreturn false /></cfif>
 
     <cfreturn true />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="hashPassword" access="public" output="false" returnType="string">
-    <cfargument name="password" required="true" />
-
-    <cfset var salt = generatePassword( 16 ) />
-
-    <cfreturn hash( password & salt, 'SHA-512' ) & salt />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="comparePassword" access="public" output="false" returnType="boolean">
-    <cfargument name="password" required="true" />
-    <cfargument name="storedPW" required="true" />
-
-    <cfset var storedsalt = right( storedPW, 16 ) />
-
-    <cfreturn 0 eq compare( storedPW, hash( password & storedsalt, 'SHA-512' ) & storedsalt ) />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -218,51 +199,6 @@
     </cfloop>
 
     <cfreturn arrData />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="generatePassword" access="public" output="false" returnType="string">
-    <cfscript>
-      var length        = 8;
-      var type          = "uc,lc,num";
-
-      var password      = "";
-      var tmp_char      = "";
-      var prev_char     = "";
-      var lIllegelChars = "o,O,0,l,I,1,B,8";
-
-      if( arrayLen( arguments ) gt 0 ) length = val( arguments[1] );  // >0
-      if( arrayLen( arguments ) gt 1 ) type   = arguments[2];         // uc,lc,num,oth
-
-      for( i=1; i lte length; i=i+1 )
-      {
-
-        while( true )
-        {
-          if(      randRange( 1, 4 ) eq 1 and listFindNoCase( type, 'uc'   )) tmp_char = chr( randRange( 65, 90 ));
-          else if( randRange( 1, 4 ) eq 2 and listFindNoCase( type, 'lc'   )) tmp_char = chr( randRange( 97,122 ));
-          else if( randRange( 1, 4 ) eq 3 and listFindNoCase( type, 'num'  )) tmp_char = chr( randRange( 48,57 ));
-          else if( randRange( 1, 4 ) eq 4 and listFindNoCase( type, 'oth'  )) tmp_char = chr( randRange( 33,47 ));
-          else
-          {
-            tmp_char = chr( 0 );
-          }
-
-          if( tmp_char neq chr( 0 )
-              and not listFind( lIllegelChars, tmp_char )
-              and tmp_char neq prev_char
-            )
-          {
-            break;
-          }
-        }
-
-        password = password & tmp_char;
-        prev_char = tmp_char;
-      }
-
-      return password;
-    </cfscript>
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -372,7 +308,7 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="setCFSetting">
+  <cffunction name="setCFSetting" output="false">
     <cfargument name="settingName" type="string" required="true" hint="requesttimeout,showdebugoutput,enablecfoutputonly" />
     <cfargument name="settingValue" type="any" required="true" />
 
@@ -389,8 +325,52 @@
     </cfswitch>
   </cffunction>
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
+
+
+
+
+
+
   <cfscript>
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    string function generatePassword( length = 8, type = "uc,lc,num" )
+    {
+      var password      = "";
+      var tmp_char      = "";
+      var prev_char     = "";
+      var lIllegelChars = "o,O,0,l,I,1,B,8";
+
+      for( i=1; i lte length; i=i+1 )
+      {
+
+        while( true )
+        {
+          if(      randRange( 1, 4 ) eq 1 and listFindNoCase( type, 'uc'   )) tmp_char = chr( randRange( 65, 90 ));
+          else if( randRange( 1, 4 ) eq 2 and listFindNoCase( type, 'lc'   )) tmp_char = chr( randRange( 97,122 ));
+          else if( randRange( 1, 4 ) eq 3 and listFindNoCase( type, 'num'  )) tmp_char = chr( randRange( 48,57 ));
+          else if( randRange( 1, 4 ) eq 4 and listFindNoCase( type, 'oth'  )) tmp_char = chr( randRange( 33,47 ));
+          else
+          {
+            tmp_char = chr( 0 );
+          }
+
+          if( tmp_char neq chr( 0 )
+              and not listFind( lIllegelChars, tmp_char )
+              and tmp_char neq prev_char
+            )
+          {
+            break;
+          }
+        }
+
+        password = password & tmp_char;
+        prev_char = tmp_char;
+      }
+
+      return password;
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public string function capFirst( required word )
     {
       if( len( word ) lte 1 )
@@ -584,6 +564,109 @@
         hexColor = hexColor & hexPart;
       }
       return hexColor;
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    private Any function getBCrypt()
+    {
+      var javaVersion = listGetAt( createObject( "java", "java.lang.System" ).getProperty( "java.version" ), 2, "." );
+      // path [,recurse] [,listInfo] [,filter] [,sort]
+      var bCryptLocation = directoryList(
+            "#listChangeDelims( getDirectoryFromPath( getCurrentTemplatePath()), '/', '\/' )#/java/#javaVersion#/",
+            false,
+            "path",
+            "*.jar"
+          );
+      var jl = new javaloader.javaloader( bCryptLocation );
+
+      return jl.create( "org.mindrot.jbcrypt.BCrypt" );
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    public String function hashPassword( required String password )
+    {
+      var bCrypt = getBCrypt();
+
+      var t = 0;
+      var cost = 10;
+
+      while( t lt 400 )
+      {
+        var start = getTickCount();
+        var hashedPW = bCrypt.hashpw( password, bCrypt.gensalt( cost ));
+        t = getTickCount() - start;
+        cost++;
+      }
+
+      return hashedPW;
+    }
+
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    public Boolean function comparePassword( required string password, required string storedPW )
+    {
+      var bCrypt = getBCrypt();
+
+      try
+      {
+        // FIRST TRY BCRYPT:
+        return bCrypt.checkpw( password, storedPW );
+      }
+      catch( Any e )
+      {
+        try
+        {
+          // THEN TRY THE OLD SHA-512 WAY:
+          var storedsalt = right( storedPW, 16 );
+
+          return 0 eq compare( storedPW, hash( password & storedsalt, 'SHA-512' ) & storedsalt );
+        }
+        catch( Any e )
+        {
+          return false;
+        }
+      }
+    }
+
+    // Curtesy of atuttle: (http://fusiongrokker.com/post/deorm)
+    function deORM( obj ){
+      var deWormed = {};
+
+      if (isSimpleValue( obj )){
+        deWormed = obj;
+      }
+      else if (isObject( obj )){
+        var md = getMetadata( obj );
+        do {
+          if (md.keyExists('properties')){
+            for (var prop in md.properties){
+              if (structKeyExists(obj, 'get' & prop.name)){
+                if ( !prop.keyExists('fieldtype') || prop.fieldtype == "id" ){
+                  deWormed[ prop.name ] = invoke(obj, "get#prop.name#");
+                }
+              }
+            }
+          }
+          if (md.keyExists('extends')){
+            md = md.extends;
+          }
+        } while(md.keyExists('extends'));
+      }
+      else if (isStruct( obj )){
+        for (var key in obj){
+          deWormed[ key ] = deORM( obj[key] );
+        }
+      }
+      else if (isArray( obj )){
+        var deWormed = [];
+        for (var el in obj){
+          deWormed.append( deORM( el ) );
+        }
+      }
+      else{
+        deWormed = getMetadata( obj );
+      }
+
+      return deWormed;
     }
   </cfscript>
 </cfcomponent>

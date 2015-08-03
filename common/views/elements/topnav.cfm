@@ -15,7 +15,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand#( getSubsystem() eq getDefaultSubsystem())?' active':''#" href="#buildURL(':main')#">#i18n.translate( 'Home' )#</a>
+      <a class="navbar-brand#( getSubsystem() eq getDefaultSubsystem())?' active':''#" href="#buildURL(':')#">#i18n.translate( 'Home' )#</a>
     </div>
 
     <ul class="nav navbar-top-links navbar-left">

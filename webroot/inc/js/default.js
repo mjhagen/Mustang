@@ -64,7 +64,6 @@ function removeModal($modal){
 
 function ajaxUrl( action, method, data )
 {
-  var seoAjax = true;
   var returnURL = _webroot + "/";
 
   if( seoAjax )

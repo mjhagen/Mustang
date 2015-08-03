@@ -1,0 +1,1 @@
+<cfoutput>#view( 'admin:securityrole.view', { role = rc.data.getSecurityrole()})#</cfoutput>

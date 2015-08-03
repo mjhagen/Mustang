@@ -24,11 +24,17 @@ component extends="framework.one"
     structDelete( url, "reload" );
   }
 
+  request.reset = ( structKeyExists( url, "nuke" ) and structKeyExists( url, "reload" ));
+
+  if( request.reset )
+  {
+    request.context.config = generateConfig( cgi.server_name );
+  }
+
   // Config based global variables:
   request.context.debug = ( listFind( request.context.config.debugIP, cgi.remote_addr ) and request.context.config.showDebug );
   request.webroot = request.context.config.webroot;
   request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
-  request.reset = ( structKeyExists( url, "nuke" ) and structKeyExists( url, "reload" ));
 
   // Private variables:
   variables.downForMaintenance = false; // true during updates
@@ -77,10 +83,10 @@ component extends="framework.one"
     ORMEvictQueries();
     cacheRemove( arrayToList( cacheGetAllIds()));
 
-    application.i18n = new services.i18n( request.context.config.defaultLanguage );
-    application.util = new services.util();
+    application.i18n = new root.lib.i18n( request.context.config.defaultLanguage );
+    application.util = new root.lib.util();
 
-    application.designService = new services.design();
+    application.designService = new root.lib.design();
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,8 +144,8 @@ component extends="framework.one"
     else
     {
       request.context.auth.isLoggedIn = true;
-      request.context.auth.user = new services.user();
-      request.context.auth.role = new services.role();
+      request.context.auth.user = new root.lib.user();
+      request.context.auth.role = new root.lib.role();
     }
 
     controller( "common:i18n.setLanguage" );
@@ -218,7 +224,7 @@ component extends="framework.one"
       "disableSecurity"   = true,
       "fileUploads"       = expandPath( "../ProjectsTemporaryFiles/files_" & request.appname ),
       "defaultLanguage"   = "en_US",
-      "securedSubsystems" = "",
+      "securedSubsystems" = "admin",
       "encryptKey"        = ""
     };
 

@@ -99,6 +99,6 @@
       </cflock>
     </cfif>
 
-    <cfset rc.design = createObject( "root.services.design" ).load() />
+    <cfset rc.design = createObject( "root.lib.design" ).load() />
   </cffunction>
 </cfcomponent>

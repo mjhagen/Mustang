@@ -95,7 +95,6 @@ component extends="apibase"
         }
 
         var SQLText = 'SELECT id FROM "#tableName#" WHERE 0 = 0 ';
-        var queryService = new query();
 
         for( var jsonField in jsonFields )
         {
@@ -106,8 +105,7 @@ component extends="apibase"
           }
         }
 
-        queryService.setSQL( SQLText );
-        var jsonParamResult = queryService.execute().getResult();
+        var jsonParamResult = queryExecute( SQLText );
       }
     }
 
@@ -131,14 +129,15 @@ component extends="apibase"
 
     if( not isNull( jsonParamResult ))
     {
-      if( not jsonParamResult.recordCount )
-      {
-        variables.where[1] = 0;
-      }
-      else
+      if( jsonParamResult.recordCount )
       {
         HQLText &= " AND e.id IN ( :ids )";
         variables.where["ids"] = listToArray( valueList( jsonParamResult.id ));
+      }
+      else
+      {
+        // return 0 results when searching on JSON param, but nothing found:
+        HQLText &= " AND 0 = 1";
       }
     }
 

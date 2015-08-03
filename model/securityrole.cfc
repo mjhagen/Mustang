@@ -9,6 +9,7 @@ component extends="basecfc.base"
 
   property fieldtype="one-to-many" name="contacts" singularName="contact" cfc="root.model.contact" FKColumn="securityroleid" cascade="delete-orphan" lazy="false" where="deleted!='true'";
   property fieldtype="one-to-many" name="securityroleitems" singularName="securityroleitem" cfc="root.model.securityroleitem" FKColumn="securityroleid" lazy="false" orderby="section" where="deleted!='true'" inform=1 editable=1 inlineedit=1;
+  property persistent=0 name="canAccessAdmin" inlist=1;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function getCanAccessAdmin()
