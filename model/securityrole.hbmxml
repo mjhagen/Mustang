@@ -3,7 +3,6 @@
   'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
   <class entity-name="securityrole" lazy="true" name="cfc:root.model.securityrole" table="securityrole">
-    <cache usage="read-only"/>
     <id name="id" type="string">
       <column name="id"/>
       <generator class="uuid"/>

@@ -1,8 +1,6 @@
-component
-{
+component{
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function init( struct fw )
-  {
+  public any function init( struct fw ){
     variables.fw = fw;
     variables.frameworkConfig = fw.getConfig();
 
@@ -10,128 +8,84 @@ component
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public void function login( struct rc )
-  {
-    param name="rc.username" default="";
-    param name="rc.password" default="";
+  public void function login( struct rc ){
+    param rc.username = "";
+    param rc.password = "";
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public void function doLogin( struct rc )
-  {
-    param name="rc.username" default="";
-    param name="rc.password" default="";
-    param name="rc.authhash" default="";
-    param name="rc.dontRedirect" default=false;
+  public void function doLogin( struct rc ){
+    param rc.username = "";
+    param rc.password = "";
+    param rc.authhash = "";
+    param rc.dontRedirect = false;
 
-    lock name="login_#rc.username#" type="exclusive" timeout="5"
-    {
-      session.alert = {
-        "class" = "danger",
-        "text"  = "login-error"
-      };
+    lock name = "login_#rc.username#"
+         type = "exclusive"
+         timeout = "5" {
+      // Check credentials:
+      if( structKeyExists( rc, "authhash" ) && len( trim( rc.authhash ))){
+        var contactID = decrypt( toString( toBinary( rc.authhash )), request.context.config.encryptKey );
+        var user = entityLoadByPK( "contact", contactID );
 
-      if( structKeyExists( rc, "authhash" ) and len( trim( rc.authhash )))
-      {
-        rc.util.createSession();
-
-        local.contactID = decrypt( toString( toBinary( rc.authhash )), request.context.config.encryptKey );
-        local.user = entityLoadByPK( "contact", local.contactID );
-
-        if( isNull( local.user ))
-        {
-          session.alert = {
+        if( isNull( user )){
+          rc.alert = {
             "class" = "danger",
             "text"  = "user-not-found"
           };
-          doLogout( rc=rc );
+          doLogout( rc = rc );
         }
 
         rc.dontRedirect = true;
-      }
-      else
-      {
-        var loginValidated = true;
-
+      } else {
         // CHECK USERNAME:
-        var findusers = entityLoad( "contact", { "username" = rc.username, "deleted" = false });
+        var user = entityLoad( "contact", { "username" = rc.username, "deleted" = false }, true );
 
-        if( isNull( findusers ) or arrayLen( findusers ) neq 1 )
-        {
-          loginValidated = false;
+        if( isNull( user )){
+          rc.alert = {
+            "class" = "danger",
+            "text"  = "user-not-found"
+          };
+          doLogout( rc = rc );
         }
 
-        if( loginValidated )
-        {
-          local.user = findusers[1];
-
-          // CHECK PASSWORD:
-          loginValidated = rc.util.comparePassword( password = rc.password, storedPW = local.user.getPassword());
+        // CHECK PASSWORD:
+        if( !user.comparePassword( password = rc.password, storedPW = user.getPassword())){
+          rc.alert = {
+            "class" = "danger",
+            "text"  = "password-incorrect"
+          };
+          doLogout( rc = rc );
         }
-
-        if( not loginValidated )
-        {
-          doLogout( rc=rc );
-        }
-        // / CHECK PASSWORD:
       }
 
-      if( local.user.getDeleted() eq true )
-      {
-        session.alert = {
-          "class" = "danger",
-          "text"  = "user-was-deleted"
-        };
-        doLogout( rc=rc );
-      }
+      // Set auth struct:
+      user.setLastLoginDate( now());
+      user.refreshSession();
 
-      local.user.setLastLoginDate( now());
-
-      if( rc.config.log )
-      {
-        local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
-
-        local.loginEvent = entityNew( "logentry" );
-        entitySave( local.loginEvent );
-
-        local.loginEvent.save( {
-          "logaction"     = local.securityLogAction.getID(),
+      // Log login action:
+      if( rc.config.log ){
+        var securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
+        var loginEvent = entityNew( "logentry" );
+        entitySave( loginEvent );
+        loginEvent.save( {
+          "logaction"     = securityLogAction.getID(),
           "note"          = "Logged in",
-          "createContact" = local.user.getID(),
+          "createContact" = user.getID(),
           "createDate"    = now(),
           "createIP"      = cgi.remote_addr,
-          "updateContact" = local.user.getID(),
+          "updateContact" = user.getID(),
           "updateDate"    = now(),
           "updateIP"      = cgi.remote_addr,
           "deleted"       = false
         });
       }
-
-      rc.util.refreshSession( userid = local.user.getID());
-
-      if( not structKeyExists( session.auth, "role" ))
-      {
-        rc.util.createSession();
-        session.alert = {
-          "class" = "danger",
-          "text"  = "user-has-no-role"
-        };
-        doLogout( rc=rc );
-      }
-
-      structDelete( session, "alert" );
     }
 
-    if( not rc.dontRedirect )
-    {
-      var role = local.user.getSecurityRole();
-      if( not isNull( role ))
-      {
-        var loginscript = role.getLoginScript();
-      }
+    if( !rc.dontRedirect ){
+      var loginscript = session.auth.role.getLoginScript();
 
-      if( isNull( loginscript ) or not len( trim( loginscript )))
-      {
+      if( isNull( loginscript ) || !len( trim( loginscript ))){
         loginscript = "#variables.frameworkConfig["defaultSubsystem"]#:";
       }
 
@@ -140,122 +94,122 @@ component
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public void function doLogout( struct rc )
-  {
-    lock scope="session" type="exclusive" timeout="5"
-    {
-      rc.util.createSession();
+  public void function doLogout( struct rc ){
+    // reset session
+    var tmpUser = entityNew( "contact" );
+    tmpUser.createSession();
 
-      if( isDefined( "rc.auth.isLoggedIn" ) and rc.auth.isLoggedIn )
-      {
-        session.alert = {
-          "class" = "success",
-          "text"  = "logout-success"
-        };
-      }
-
-      if( isDefined( "rc.auth.userid" ))
-      {
-        local.user = entityLoadByPK( "contact", rc.auth.userid );
-        if( rc.config.log and not isNull( local.user ))
-        {
-          local.securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
-          local.loginEvent = entityNew( "logentry", {
-            "logaction"     = local.securityLogAction,
-            "note"          = "Logged out",
-            "createContact" = local.user,
-            "createDate"    = now(),
-            "createIP"      = cgi.remote_addr,
-            "updateContact" = local.user,
-            "updateDate"    = now(),
-            "updateIP"      = cgi.remote_addr,
-            "entity"        = local.user,
-            "deleted"       = false
-          });
-          entitySave( local.loginEvent );
-        }
-      }
-
-      if( fw.getSubsystem() eq "api" or listFirst( cgi.PATH_INFO, "/" ) eq "api" or ( fw.getSubsystem() eq "admin" and fw.getSection() eq "api" ))
-      {
-        var pageContext = getPageContext();
-        var response = pageContext.getFusionContext().getResponse();
-            response.setStatus( 401 );
-            response.setHeader( "Content-Type", "application/json" );
-
-        request.context.util.setCFSetting( "showdebugoutput", false );
-        pageContext.getCfoutput().clearAll();
-        writeOutput( serializeJSON( {"status"="error","detail"="Unauthorized"} ));
-        abort;
-      }
-
-      fw.redirect( "common:security.login" );
+    if( isDefined( "rc.auth.isLoggedIn" ) && rc.auth.isLoggedIn ){
+      rc.alert = {
+        "class" = "success",
+        "text"  = "logout-success"
+      };
     }
+
+    if( rc.config.log and isDefined( "rc.auth.userid" ) ){
+      var user = entityLoadByPK( "contact", rc.auth.userid );
+      var securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
+      var logoutEvent = entityNew( "logentry" );
+      entitySave( logoutEvent );
+      logoutEvent.save( {
+        "logaction"     = securityLogAction.getID(),
+        "note"          = "Logged out",
+        "createContact" = user.getID(),
+        "createDate"    = now(),
+        "createIP"      = cgi.remote_addr,
+        "updateContact" = user.getID(),
+        "updateDate"    = now(),
+        "updateIP"      = cgi.remote_addr,
+        "deleted"       = false
+      });
+    }
+
+    if( fw.getSubsystem() == "api" || listFirst( cgi.PATH_INFO, "/" ) == "api" || ( fw.getSubsystem() == "admin" && fw.getSection() == "api" )){
+      var pageContext = getPageContext();
+      var response = pageContext.getFusionContext().getResponse();
+          response.setStatus( 401 );
+          response.setHeader( "Content-Type", "application/json" );
+
+      rc.util.setCFSetting( "showdebugoutput", false );
+      pageContext.getCfoutput().clearAll();
+      writeOutput( serializeJSON( {"status"="error","detail"="Unauthorized"} ));
+      abort;
+    }
+
+    if( structKeyExists( rc, "alert" )){
+      lock scope = "session"
+           type = "exclusive"
+           timeout = "5" {
+        session.alert = rc.alert;
+      }
+    }
+
+    fw.redirect( "common:security.login", "all" );
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public void function authorize( struct rc )
-  {
-    lock scope="session" type="exclusive" timeout="5"
-    {
-      // Always allow access to common:security and api:css
+  public void function authorize( struct rc ){
+    lock scope = "session"
+         type = "exclusive"
+         timeout = "5" {
+      // Always allow access to common:security && api:css
       if(
-          listFind( 'security,css', fw.getSection()) or
-          (
-            len( trim( rc.config.securedSubsystems )) and
-            not listFindNoCase( rc.config.securedSubsystems, fw.getSubSystem())
-          )
-        )
-      {
+          ( fw.getSubsystem() == "common" && fw.getSection() == "security" ) ||
+          ( fw.getSubsystem() == "adminapi" && fw.getSection() == "css" ) ||
+          ( len( trim( rc.config.securedSubsystems )) && !listFindNoCase( rc.config.securedSubsystems, fw.getSubSystem()))
+      ){
         rc.auth.isLoggedIn = false;
-        if(
-            structKeyExists( session, "auth" ) and
-            structKeyExists( session.auth, "isLoggedIn" )
-          )
-        {
+
+        if( structKeyExists( session, "auth" ) && structKeyExists( session.auth, "isLoggedIn" )){
           rc.auth = session.auth;
         }
+
         return;
       }
 
-      // Auto login
-      if( structKeyExists( rc, 'authhash' ))
-      {
+      // Auto login:
+      if( structKeyExists( rc, 'authhash' )){
         doLogin( rc = rc );
       }
 
+      // API basic auth login:
       var HTTPRequestData = GetHTTPRequestData();
 
       if(
-          isStruct( HTTPRequestData ) and
-          structKeyExists( HTTPRequestData, "headers" ) and
-          isStruct( HTTPRequestData.headers ) and
-          structKeyExists( HTTPRequestData.headers, "authorization" ) and
+          isStruct( HTTPRequestData ) &&
+          structKeyExists( HTTPRequestData, "headers" ) &&
+          isStruct( HTTPRequestData.headers ) &&
+          structKeyExists( HTTPRequestData.headers, "authorization" ) &&
           len( trim( HTTPRequestData.headers.authorization ))
-        )
-      {
+      ){
         var basicAuth = toString( toBinary( listLast( HTTPRequestData.headers.authorization, " " )));
         rc.username = listFirst( basicAuth, ":" );
         rc.password = listRest( basicAuth, ":" );
         rc.dontRedirect = true;
-
         doLogin( rc = rc );
       }
 
-      if( not structKeyExists( session, "auth" ))
-      {
-        session.alert = {
+      // no auth in session, user is not logged in:
+      if( !structKeyExists( session, "auth" )){
+        rc.alert = {
           "class" = "danger",
           "text"  = "no-auth-in-session"
         };
         doLogout( rc = rc );
       }
 
+      // store session info in the request context scope:
       rc.auth = session.auth;
 
-      if( not rc.util.authIsValid( rc.auth ) or not rc.auth.isLoggedIn )
-      {
-        session.alert = {
+      var tempUser = new root.model.contact();
+
+      if(
+          !rc.auth.isLoggedIn ||
+          !structKeyExists( rc.auth, "user" ) ||
+          !tempUser.authIsValid( rc.auth )
+      ){
+        // something is wrong with the session:
+        rc.alert = {
           "class" = "danger",
           "text"  = "invalid-auth-struct"
         };
@@ -264,9 +218,8 @@ component
     }
   }
 
-  public void function doRetrieve( struct rc )
-  {
-    if( structKeyExists( rc, 'email' ) and len( trim( rc.email )))
+  public void function doRetrieve( struct rc ){
+    if( structKeyExists( rc, 'email' ) && len( trim( rc.email )))
     {
       rc.data = entityLoad( 'contact',{ email = rc.email, deleted = false }, true );
     }
@@ -292,7 +245,7 @@ component
         "class" = "success",
         "text"  = "email-send"
       };
-      fw.redirect( "common:security.login" );
+      fw.redirect( "common:security.login", "all" );
     }
     else
     {

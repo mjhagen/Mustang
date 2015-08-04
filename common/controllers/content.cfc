@@ -50,14 +50,10 @@
         <cfset rc.subnav = "" />
 
         <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "role" ) and isObject( rc.auth.role )>
-          <cfif rc.auth.role.getName() eq "Administrator">
-            <cfset local.roleSubnav = "" />
-          <cfelseif rc.auth.isLoggedIn>
-            <cfset local.roleSubnav = rc.auth.role.getMenuList() />
-          </cfif>
+          <cfset local.roleSubnav = rc.auth.role.getMenuList() />
         </cfif>
 
-        <cfif not isDefined( "local.roleSubnav" )>
+        <cfif isNull( local.roleSubnav )>
           <cfset local.roleSubnav = "" />
         </cfif>
 

@@ -1,31 +1,129 @@
-<cfcomponent extends="apibase">
-  <cffunction name="save">
-    <cfargument name="rc" />
+component extends="apibase"{
+  request.layout = false;
 
-    <cftry>
-      <cfset var languageFileName = "nl-NL.json" />
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function list( struct rc ){
+    param string rc.label = "";
 
-      <cfset request.layout = false />
+    var result = {
+      "status" = "ok",
+      "data" = []
+    };
 
-      <cffile charset="UTF-8" action="read" file="#request.root#/i18n/#languageFileName#" variable="local.languageFile" />
+    var languageStructs = {};
+    var allLabels = [];
+    var allLanguages = getTranslationFiles();
 
-      <cfset local.translations = deserializeJSON( local.languageFile ) />
-      <cfset local.translations[rc.label] = rc.translation />
+    for( var language in allLanguages ){
+      var lanCode = listFirst( language, "." );
 
-      <cfif not structKeyExists( application, "jl" )>
-        <cfset application.jl = new javaloader.javaLoader(['#request.root#/thirdparty/json/thirdparty.json.jar']) />
-      </cfif>
+      languageStructs[lanCode] = readTranslationFile( lanCode );
 
-      <cfset local.jl = application.jl />
-      <cfset local.JSONObject = local.jl.create( "thirdparty.json.JSONObject" ).init( serializeJSON( local.translations )) />
+      if( len( trim( rc.label ))){
+        allLabels = [ rc.label ];
+      }
+      else{
+        for( var key in languageStructs[lanCode] ){
+          if( not arrayFindNoCase( allLabels, key )){
+            arrayAppend( allLabels, key );
+          }
+        }
+      }
+    }
 
-      <cffile charset="UTF-8" action="write" file="#request.root#/i18n/#languageFileName#" output="#local.JSONObject.toString( 2 )#" fixnewline="true" />
+    arraySort( allLabels, "textNoCase" );
 
-      <cfreturn true />
+    for( var label in allLabels ){
+      var row = {
+        "id" = label,
+        "label" = label
+      };
 
-      <cfcatch>
-        <cfreturn false />
-      </cfcatch>
-    </cftry>
-  </cffunction>
-</cfcomponent>
+      for( var language in allLanguages ){
+        var lanCode = listFirst( language, "." );
+
+        if( structKeyExists( languageStructs[lanCode], label )){
+          row[lanCode] = languageStructs[lanCode][label];
+        }
+      }
+
+      arrayAppend( result.data, row );
+    }
+
+    returnAsJSON( result );
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function remove( struct rc ){
+    try{
+      var allLanguages = getTranslationFiles();
+
+      for( language in allLanguages )
+      {
+        var lanCode = listFirst( language, "." );
+        lock timeout=5 scope="application"{
+          var translations = readTranslationFile( lanCode );
+          for( var label in listToArray( rc.labels ))
+          {
+            structDelete( translations, label );
+          }
+          writeTranslationFile( lanCode, translations );
+        }
+      }
+      returnAsJSON({ "status" = "ok" });
+    }
+    catch( any e ){
+      returnAsJSON({ "status" = "error", "message" = e.message, "detail" = e.detail });
+    }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public void function save( struct rc ){
+    try{
+      lock timeout=5 scope="application"{
+        var translations = readTranslationFile( language );
+        translations[rc.name] = rc.value;
+        writeTranslationFile( language, translations );
+      }
+      returnAsJSON({ "status" = "ok", "data" = {
+        "label" = rc.name,
+        "#rc.language#" = rc.value
+      }});
+    }
+    catch( any e ){
+      returnAsJSON({ "status" = "error", "message" = e.message });
+    }
+  }
+
+
+
+
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  private array function getTranslationFiles(){
+    try{
+      return directoryList( request.root & '/i18n', false, "name" );
+    }
+    catch( any e ){
+      return [];
+    }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  private struct function readTranslationFile( required string language ){
+    try{
+      return deserializeJSON( fileRead( "#request.root#/i18n/#language#.json", "utf-8" ));
+    }
+    catch( any e ){
+      return {};
+    }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  private void function writeTranslationFile( required string language, required any data ){
+    try{
+      fileWrite( "#request.root#/i18n/#language#.json", serializeJSON( data ), "utf-8" );
+    }
+    catch( any e ){}
+  }
+}

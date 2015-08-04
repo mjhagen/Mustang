@@ -90,85 +90,9 @@
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="getCountryList" access="public" output="false" returnType="array">
-    <cfreturn entityLoad( "country" ) />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="cmToPoints" returntype="numeric" access="public" output="false" hint="Converts centimeters to PostScript points">
     <cfargument name="centimeters" type="numeric" required="true">
     <cfreturn ( centimeters * 72 ) / 2.54>
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="authIsValid" output="false">
-    <cfargument name="auth" required="true" />
-
-    <cfset var requiredKeys = [ 'isLoggedIn', 'user', 'userid', 'role' ] />
-
-    <cfloop array="#requiredKeys#" index="key">
-      <cfif not structKeyExists( auth, key )>
-        <cfreturn false />
-      </cfif>
-    </cfloop>
-
-    <cfif not len( trim( auth.userid ))><cfreturn false /></cfif>
-    <cfif not isStruct( auth.user )><cfreturn false /></cfif>
-    <cfif not isStruct( auth.role )><cfreturn false /></cfif>
-    <cfif not isBoolean( auth.isLoggedIn )><cfreturn false /></cfif>
-
-    <cfreturn true />
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="createSession">
-    <cflock scope="session" type="exclusive" timeout="30">
-      <cfset session.can = {} />
-      <cfset session.auth = {
-        "isLoggedIn" = false,
-        "user" = 0,
-        "role" = 0,
-        "userid" = '',
-        "canAccessAdmin" = false
-      } />
-      <cfset structDelete( session, "subnav" ) />
-    </cflock>
-  </cffunction>
-
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="refreshSession" returnType="boolean">
-    <cfargument name="userid" required="false" />
-    <cfargument name="username" required="false" />
-
-    <cfif structKeyExists( arguments, "username" ) and len( trim( username ))>
-      <cfset local.user = entityLoad( "contact", { username = username }, true ) />
-    <cfelseif structKeyExists( arguments, "userid" ) and len( trim( userid ))>
-      <cfset local.user = entityLoadByPK( "contact", userid ) />
-    <cfelse>
-      <cfreturn false />
-    </cfif>
-
-    <cfif isNull( local.user )>
-      <cfreturn false />
-    </cfif>
-
-    <cfset createSession() />
-
-    <cflock scope="session" type="exclusive" timeout="30">
-      <cfset local.securityRole = local.user.getSecurityrole() />
-
-      <!--- populate user object with DB data --->
-      <cfset session.auth.isLoggedIn = true />
-      <cfset session.auth.user = local.user />
-      <cfset session.auth.userid = local.user.getID() />
-
-      <cfif not isNull( local.securityRole )>
-        <cfset session.auth.role = local.securityRole />
-        <cfset session.auth.canAccessAdmin = local.securityRole.getCanAccessAdmin() />
-      </cfif>
-    </cflock>
-
-    <cfreturn true />
   </cffunction>
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
@@ -564,67 +488,6 @@
         hexColor = hexColor & hexPart;
       }
       return hexColor;
-    }
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    private Any function getBCrypt()
-    {
-      var javaVersion = listGetAt( createObject( "java", "java.lang.System" ).getProperty( "java.version" ), 2, "." );
-      // path [,recurse] [,listInfo] [,filter] [,sort]
-      var bCryptLocation = directoryList(
-            "#listChangeDelims( getDirectoryFromPath( getCurrentTemplatePath()), '/', '\/' )#/java/#javaVersion#/",
-            false,
-            "path",
-            "*.jar"
-          );
-      var jl = new javaloader.javaloader( bCryptLocation );
-
-      return jl.create( "org.mindrot.jbcrypt.BCrypt" );
-    }
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    public String function hashPassword( required String password )
-    {
-      var bCrypt = getBCrypt();
-
-      var t = 0;
-      var cost = 10;
-
-      while( t lt 400 )
-      {
-        var start = getTickCount();
-        var hashedPW = bCrypt.hashpw( password, bCrypt.gensalt( cost ));
-        t = getTickCount() - start;
-        cost++;
-      }
-
-      return hashedPW;
-    }
-
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    public Boolean function comparePassword( required string password, required string storedPW )
-    {
-      var bCrypt = getBCrypt();
-
-      try
-      {
-        // FIRST TRY BCRYPT:
-        return bCrypt.checkpw( password, storedPW );
-      }
-      catch( Any e )
-      {
-        try
-        {
-          // THEN TRY THE OLD SHA-512 WAY:
-          var storedsalt = right( storedPW, 16 );
-
-          return 0 eq compare( storedPW, hash( password & storedsalt, 'SHA-512' ) & storedsalt );
-        }
-        catch( Any e )
-        {
-          return false;
-        }
-      }
     }
 
     // Curtesy of atuttle: (http://fusiongrokker.com/post/deorm)

@@ -37,7 +37,7 @@
           "text"  = "password-too-short"
         } />
       <cfelse>
-        <cfset rc.data.setPassword( rc.util.hashPassword( rc.password )) />
+        <cfset rc.data.setPassword( rc.data.hashPassword( rc.password )) />
       </cfif>
     </cfif>
 

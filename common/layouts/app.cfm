@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>#i18n.translate( getFullyQualifiedAction())#</title>
+    <title>Error</title>
 
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="#getBaseURL()#/inc/plugins/bootstrap/theme/bootstrap-theme.min.css" />

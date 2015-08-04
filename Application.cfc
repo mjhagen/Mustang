@@ -5,9 +5,6 @@ component extends="framework.one"
   this.setclientcookies = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
 
-  application = {};
-  session = {};
-
   this.mappings["/root"] = getDirectoryFromPath( getCurrentTemplatePath());
 
   // Global variables:
@@ -242,13 +239,7 @@ component extends="framework.one"
       cachePut( "config-#this.name#", config );
     }
 
-    for( key in defaultSettings )
-    {
-      if( structKeyExists( config, key ))
-      {
-        defaultSettings[key] = config[key];
-      }
-    }
+    structAppend( defaultSettings, config, true );
 
     return defaultSettings;
   }

@@ -15,27 +15,45 @@ component
   public void function before( rc ){}
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public string function returnAsJSON( variable )
+  private String function returnAsJSON( Any variable )
   {
-    var pageContext = getPageContext();
-    var returnType = "application/json";
+    var statusCode = 200; // default
+    var statusCodes = {
+      "error"       = 500,
+      "not-allowed" = 405,
+      "not-found"   = 404,
+      "created"     = 201,
+      "no-content"  = 204
+    };
 
-    if( cgi.HTTP_USER_AGENT contains 'MSIE' )
+    if(
+        isStruct( variable ) and
+        structKeyExists( variable, "status" ) and
+        structKeyExists( statusCodes, variable.status )
+      )
     {
-      returnType = "text/html";
+      statusCode = statusCodes[variable.status];
     }
+
+    var pageContext = getPageContext();
 
     if( listFindNoCase( "lucee,railo", server.ColdFusion.ProductName ))
     {
-      pageContext.getResponse().setContentType( returnType );
       pageContext.clear();
     }
     else
     {
-      pageContext.getFusionContext().getResponse().setHeader( "Content-Type", returnType );
-      pageContext.getCfoutput().clearAll();
+      pageContext.getcfoutput().clearall();
     }
 
+    var response = pageContext.getResponse();
+
+    response.setHeader( "Access-Control-Allow-Origin", "*" );
+    response.setStatus( statusCode );
+    response.setContentType( 'application/json; charset=utf-8' );
+
     writeOutput( serializeJSON( variable ));
+
+    abort;
   }
 }

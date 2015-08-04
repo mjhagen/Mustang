@@ -43,8 +43,7 @@ $(function(){
 });
 
 function createModal( id, size ){
-  if( size == undefined )
-  {
+  if( size == undefined ){
     size = '';
   }
 
@@ -62,28 +61,22 @@ function removeModal($modal){
   })
 };
 
-function ajaxUrl( action, method, data )
-{
+function ajaxUrl( action, method, data ){
   var returnURL = _webroot + "/";
 
-  if( seoAjax )
-  {
-    if( action != undefined )
-    {
+  if( seoAjax ){
+    if( action != undefined ){
       returnURL += action;
     }
 
-    if( method != undefined )
-    {
+    if( method != undefined ){
       returnURL += "/" + method;
     }
 
-    if( data != undefined )
-    {
+    if( data != undefined ){
       var serializedData = $.param( data );
 
-      if( serializedData != undefined && serializedData.length )
-      {
+      if( serializedData != undefined && serializedData.length ){
         returnURL += "/" + serializedData;
       }
     }
@@ -94,22 +87,18 @@ function ajaxUrl( action, method, data )
   {
     returnURL += "index.cfm?action=";
 
-    if( action != undefined )
-    {
+    if( action != undefined ){
       returnURL += action;
     }
 
-    if( method != undefined )
-    {
+    if( method != undefined ){
       returnURL += "." + method;
     }
 
-    if( data != undefined )
-    {
+    if( data != undefined ){
       var serializedData = $.param( data );
 
-      if( serializedData != undefined && serializedData.length )
-      {
+      if( serializedData != undefined && serializedData.length ){
         returnURL += "&" + serializedData;
       }
     }

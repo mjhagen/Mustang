@@ -72,7 +72,7 @@
 
     <cfset var currentUser = entityLoadByPK( "contact", rc.auth.userid ) />
     <cfif isDefined( "currentUser" )>
-      <cfset currentUser.setPassword( rc.util.hashPassword( rc.newPassword )) />
+      <cfset currentUser.setPassword( currentUser.hashPassword( rc.newPassword )) />
       <cflock scope="session" timeout="5">
         <cfset session.alert = {
           "class"           = "success",

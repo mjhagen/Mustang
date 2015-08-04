@@ -1,7 +1,11 @@
 component accessors=true
 {
   property name="name" default="Administrator";
-  property name="menuList" default="test";
+  property name="menuList" default="";
+
+  public boolean function getCanAccessAdmin(){
+    return true;
+  }
 
   public any function init()
   {

@@ -9,6 +9,12 @@ component
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  public struct function getLanStruct()
+  {
+    return deserializeJSON( fileRead( '#request.root#/i18n/#languageFileName#', 'utf-8' ));
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public string function translate( required string label, string languageid = "", string alternative = "", struct stringVariables = {}, boolean capFirst = true )
   {
     if( isNull( alternative ) or not len( trim( alternative )))
@@ -135,7 +141,7 @@ component
 
       if( not structKeyExists( application.translations[languageid], label ))
       {
-        var lanStruct = deserializeJSON( fileRead( '#request.root#/i18n/#languageFileName#', 'utf-8' ));
+        var lanStruct = getLanStruct();
         if( structKeyExists( lanStruct, label ))
         {
           application.translations[languageid][label] = lanStruct[label];
