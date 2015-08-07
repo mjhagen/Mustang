@@ -16,7 +16,7 @@
       FROM    content c
 
       WHERE c.fullyqualifiedaction = <cfqueryparam value="#fw.getfullyqualifiedaction()#" />
-        AND c.language.id = <cfqueryparam value="#rc.currentlanguageID#" />
+        AND c.locale.id = <cfqueryparam value="#rc.currentlocaleID#" />
         AND c.deleted != <cfqueryparam cfsqltype="cf_sql_tinyint" value="1" />
     </cfquery>
 

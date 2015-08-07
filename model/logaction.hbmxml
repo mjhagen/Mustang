@@ -1,0 +1,28 @@
+<!DOCTYPE hibernate-mapping
+  PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
+  'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
+<hibernate-mapping>
+  <class entity-name="logaction" lazy="true" name="cfc:root.model.logaction" table="logaction">
+    <cache usage="read-only"/>
+    <id name="id" type="string">
+      <column name="id"/>
+      <generator class="uuid"/>
+    </id>
+    <property name="deleted" type="boolean">
+      <column name="deleted"/>
+    </property>
+    <property name="sortorder" type="integer">
+      <column name="sortorder"/>
+    </property>
+    <property name="name" type="string">
+      <column length="128" name="name"/>
+    </property>
+    <property name="class" type="string">
+      <column length="32" name="class"/>
+    </property>
+    <bag name="logentries">
+      <key column="logactionid"/>
+      <one-to-many class="cfc:root.model.logentry"/>
+    </bag>
+  </class>
+</hibernate-mapping>

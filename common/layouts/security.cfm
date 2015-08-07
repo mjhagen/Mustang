@@ -1,5 +1,5 @@
 <cfoutput><!DOCTYPE html>
-<html lang="#rc.currentlanguage.getCode()#">
+<html lang="#rc.currentlocale.getCode()#">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

@@ -1,4 +1,4 @@
-component extends="basecfc.base"
+component extends="root.model.logged"
           persistent=true
           table="text"
           discriminatorcolumn="type"
@@ -6,7 +6,7 @@ component extends="basecfc.base"
 {
   property name="title" fieldType="column" length=128 inlist=1;
   property name="body" fieldType="column" ORMType="text";
-  property name="language" fieldType="many-to-one" cfc="root.model.language" FKColumn="languageid";
+  property name="locale" fieldType="many-to-one" cfc="root.model.locale" FKColumn="localeid";
 
   public string function getName()
   {

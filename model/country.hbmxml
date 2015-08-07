@@ -2,9 +2,9 @@
   PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
   'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
-  <subclass discriminator-value="language" entity-name="language" extends="cfc:root.model.option" lazy="true" name="cfc:root.model.language">
+  <subclass discriminator-value="country" entity-name="country" extends="cfc:root.model.option" lazy="true" name="cfc:root.model.country">
     <bag name="locales">
-      <key column="localeid"/>
+      <key column="countryid"/>
       <one-to-many class="cfc:root.model.locale" />
     </bag>
     <join table="`option`">

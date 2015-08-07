@@ -1,27 +1,17 @@
-<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
-                                   "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!DOCTYPE hibernate-mapping
+  PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
+  'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
-    <class entity-name="text" lazy="true" name="cfc:root.model.text" table="text">
-        <id name="id" type="string">
-            <column name="id"/>
-            <generator class="uuid"/>
-        </id>
-        <discriminator column="type"/>
-        <property name="name" type="string">
-            <column length="128" name="name"/>
-        </property>
-        <property name="deleted" type="boolean">
-            <column name="deleted"/>
-        </property>
-        <property name="sortorder" type="integer">
-            <column name="sortorder"/>
-        </property>
-        <property name="title" type="string">
-            <column length="128" name="title"/>
-        </property>
-        <property name="body" type="text">
-            <column name="body"/>
-        </property>
-        <many-to-one class="cfc:root.model.language" column="languageid" name="language"/>
-    </class>
+  <subclass discriminator-value="text" entity-name="text" extends="cfc:root.model.logged" lazy="true" name="cfc:root.model.text">
+    <join table="text">
+      <key column="id"/>
+      <property name="title" type="string">
+        <column length="128" name="title"/>
+      </property>
+      <property name="body" type="text">
+        <column name="body"/>
+      </property>
+      <many-to-one class="cfc:root.model.locale" column="localeid" name="locale"/>
+    </join>
+  </subclass>
 </hibernate-mapping>

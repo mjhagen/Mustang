@@ -1,0 +1,24 @@
+<!DOCTYPE hibernate-mapping
+  PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
+  'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
+<hibernate-mapping>
+  <class entity-name="option" lazy="true" name="cfc:root.model.option" table="`option`">
+    <id name="id" type="string">
+      <column name="id"/>
+      <generator class="uuid"/>
+    </id>
+    <discriminator column="type"/>
+    <property name="name" type="string">
+      <column length="128" name="name"/>
+    </property>
+    <property name="deleted" type="boolean">
+      <column name="deleted"/>
+    </property>
+    <property name="sortorder" type="integer">
+      <column name="sortorder"/>
+    </property>
+    <property name="importkey" type="string">
+      <column length="128" name="importkey"/>
+    </property>
+  </class>
+</hibernate-mapping>

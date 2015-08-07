@@ -9,16 +9,16 @@ component output="false"
   public void function setLanguage( rc )
   {
     var defaultLanguage = rc.config.defaultLanguage;
-    var languageid = createUUID();
+    var localeID = createUUID();
     var reload = false;
 
     lock scope="session" timeout=5
     {
       if(
-          not structKeyExists( cookie, "languageid" ) or
-          not structKeyExists( session, "languageid" ) or
-          not structKeyExists( session, "language" ) or
-          structKeyExists( url, "languageid" ) or
+          not structKeyExists( cookie, "localeID" ) or
+          not structKeyExists( session, "localeID" ) or
+          not structKeyExists( session, "locale" ) or
+          structKeyExists( url, "localeID" ) or
           structKeyExists( url, "reload" )
         )
       {
@@ -28,64 +28,79 @@ component output="false"
 
     if( reload )
     {
-      if( structKeyExists( rc, "languageid" ) and len( trim( rc.languageid )))
+      if( structKeyExists( rc, "localeID" ) and len( trim( rc.localeID )))
       {
-        languageid = rc.languageid;
+        localeID = rc.localeID;
       }
 
-      if( not len( trim( languageid )) and structKeyExists( cookie, "languageid" ) and len( trim( cookie.languageid )))
+      if( not len( trim( localeID )) and structKeyExists( cookie, "localeID" ) and len( trim( cookie.localeID )))
       {
-        languageid = cookie.languageid;
+        localeID = cookie.localeID;
       }
 
-      if( not len( trim( languageid )))
+      if( not len( trim( localeID )))
       {
         lock scope="session" timeout=5
         {
-          if( structKeyExists( session, "languageid" ) and len( trim( session.languageid )))
+          if( structKeyExists( session, "localeID" ) and len( trim( session.localeID )))
           {
-            languageid = session.languageid;
+            localeID = session.localeID;
           }
         }
       }
 
-      var language = entityLoadByPK( "language", languageid );
+      var locale = entityLoadByPK( "locale", localeID );
 
-      if( isNull( language ) and len( trim( defaultLanguage )))
+      if( isNull( locale ) and len( trim( defaultLanguage )))
       {
-        language = entityLoad( "language", { "code" = defaultLanguage }, true );
+        var defaultLanguageCode = listGetAt( defaultLanguage, 1, "_" );
+        var defaultCountryCode = listGetAt( defaultLanguage, 2, "_" );
+        var language = entityLoad( "language", { "code" = defaultLanguageCode }, true );
+        var country = entityLoad( "country", { "code" = defaultCountryCode }, true );
+
+        var locale = entityNew( "locale" );
+
+        if( isNull( language ))
+        {
+          var language = entityNew( "language" );
+          language.setCode( defaultLanguageCode );
+        }
+
+        if( isNull( country ))
+        {
+          var country = entityNew( "country" );
+          country.setCode( defaultCountryCode );
+        }
+
+        locale.setID( localeID );
+        locale.setLanguage( language );
+        locale.setCountry( country );
       }
 
-      if( isNull( language ))
-      {
-        language = entityNew( "language" );
-        language.setID( languageid );
-        language.setCode( defaultLanguage );
-      }
+      localeID = locale.getID();
 
-      languageid = language.getID();
+      var localeCode = locale.getCode();
 
-      if( not isSimpleValue( language ) and
-          not isNull( language.getCode()) and
-          len( trim( language.getCode())))
+      if( not isNull( localeCode ) and
+          len( trim( localeCode )))
       {
-        setLocale( language.getCode());
+        setLocale( localeCode );
       }
 
       lock scope="session" timeout=5
       {
-        cookie.languageid = languageid;
-        session.languageid = languageid;
-        session.language = language;
-        rc.currentlanguageid = languageid;
-        rc.currentlanguage = language;
+        cookie.localeID = localeID;
+        session.localeID = localeID;
+        session.locale = locale;
+        rc.currentlocaleID = localeID;
+        rc.currentlocale = locale;
       }
     }
 
     lock scope="session" timeout=5
     {
-      rc.currentlanguageid = session.languageid;
-      rc.currentlanguage = session.language;
+      rc.currentlocaleID = session.localeID;
+      rc.currentlocale = session.locale;
     }
   }
 }

@@ -1,5 +1,4 @@
-component extends="framework.one"
-{
+component extends="framework.one" {
   // CF application setup:
   this.sessionmanagement = true;
   this.setclientcookies = true;
@@ -16,8 +15,7 @@ component extends="framework.one"
   // Config:
   request.context.config = generateConfig( cgi.server_name );
 
-  if( structKeyExists( url, "reload" ) and url.reload neq request.context.config.reloadpw )
-  {
+  if( structKeyExists( url, "reload" ) && url.reload != request.context.config.reloadpw ){
     structDelete( url, "reload" );
   }
 
@@ -29,7 +27,7 @@ component extends="framework.one"
   }
 
   // Config based global variables:
-  request.context.debug = ( listFind( request.context.config.debugIP, cgi.remote_addr ) and request.context.config.showDebug );
+  request.context.debug = ( listFind( request.context.config.debugIP, cgi.remote_addr ) && request.context.config.showDebug );
   request.webroot = request.context.config.webroot;
   request.fileUploads = request.context.config.fileUploads; // request.root & '../files_' & this.name;
 
@@ -70,10 +68,8 @@ component extends="framework.one"
   };
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function setupApplication()
-  {
-    if( request.reset )
-    {
+  public any function setupApplication(){
+    if( request.reset ){
       ORMReload();
     }
 
@@ -87,13 +83,11 @@ component extends="framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function setupRequest()
-    {
+  public any function setupRequest(){
     request.context.startTime = getTickCount();
 
     // globally available utility libraries:
-    lock scope="application" timeout="5" type="readOnly"
-    {
+    lock scope="application" timeout="5" type="readOnly" {
       request.context.i18n = variables.i18n = application.i18n;
       request.context.util = variables.util = application.util;
       request.context.designService = variables.designService = application.designService;
@@ -105,16 +99,13 @@ component extends="framework.one"
     variables.util.limiter( 10, 50, 5 );
 
     // alert messages:
-    lock scope="session" timeout="5" type="readOnly"
-    {
-      if( structKeyExists( session, "alert" ) and isStruct( session.alert ) and
-          structKeyExists( session.alert, 'class' ) and
-          structKeyExists( session.alert, 'text' ))
-      {
+    lock scope="session" timeout="5" type="readOnly" {
+      if( structKeyExists( session, "alert" ) && isStruct( session.alert ) &&
+          structKeyExists( session.alert, 'class' ) &&
+          structKeyExists( session.alert, 'text' )){
         request.context.alert = session.alert;
 
-        if( not structKeyExists( request.context.alert, "stringVariables" ))
-        {
+        if( !structKeyExists( request.context.alert, "stringVariables" )){
           request.context.alert.stringVariables = {};
         }
 
@@ -122,8 +113,7 @@ component extends="framework.one"
       }
     }
 
-    if( variables.downForMaintenance and not request.context.debug )
-    {
+    if( variables.downForMaintenance && !request.context.debug ) {
       writeOutput( 'Geachte gebruiker,
             <br /><br />
             Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
@@ -134,12 +124,9 @@ component extends="framework.one"
     }
 
     // security, translations and content:
-    if( not request.context.config.disableSecurity )
-    {
+    if( !request.context.config.disableSecurity ) {
       controller( "common:security.authorize" );
-    }
-    else
-    {
+    } else {
       request.context.auth.isLoggedIn = true;
       request.context.auth.user = new root.lib.user();
       request.context.auth.role = new root.lib.role();
@@ -148,36 +135,25 @@ component extends="framework.one"
     controller( "common:i18n.setLanguage" );
     controller( "common:content.getContent" );
 
-    if(
-        getSubsystem() eq "admin" and
-        not cachedFileExists( '../admin/controllers/#getSection()#.cfc' )
-      )
-    {
+    if( getSubsystem() eq "admin" && !cachedFileExists( '../admin/controllers/#getSection()#.cfc' )){
       controller( 'admin:crud.#getItem()#' );
     }
 
-    if(
-        getSubsystem() eq "api" and
-        not cachedFileExists( '../api/controllers/#getSection()#.cfc' )
-      )
-    {
+    if( getSubsystem() eq "api" && !cachedFileExists( '../api/controllers/#getSection()#.cfc' )){
       controller( 'api:main.#getItem()#' );
     }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function getEnvironment()
-  {
+  public any function getEnvironment(){
 
     return variables.live ? "live" : "dev";
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function setupEnvironment( String environment="" )
-  {
+  public any function setupEnvironment( String environment="" ){
     // App specific globals
-    switch( environment )
-    {
+    switch( environment ){
       case 'dev':
         request.version &= "a" & REReplace( "$Revision: 0 $", "[^\d]+", "", "all" );
 
@@ -186,15 +162,12 @@ component extends="framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function onMissingView()
-  {
-    if( fileExists( request.root & "/common/views/" & getSection() & "/" & getItem() & ".cfm" ))
-    {
+  public any function onMissingView(){
+    if( fileExists( request.root & "/common/views/" & getSection() & "/" & getItem() & ".cfm" )){
       return view( "common:" & getSection() & "/" & getItem());
     }
 
-    if( structKeyExists( request.context, "fallbackView" ))
-    {
+    if( structKeyExists( request.context, "fallbackView" )){
       return view( request.context.fallbackView );
     }
 
@@ -202,8 +175,7 @@ component extends="framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function generateConfig( String site="" )
-  {
+  public any function generateConfig( String site="" ){
     // DEFAULT:
     var defaultSettings = {
       "debugEmail"        = "bugs@mstng.info",
@@ -230,8 +202,8 @@ component extends="framework.one"
     if( isNull( config ) or
         request.reset or
         (
-          structKeyExists( config, "appIsLive" ) and
-          not config.appIsLive
+          structKeyExists( config, "appIsLive" ) &&
+          !config.appIsLive
         )
       )
     {
@@ -245,8 +217,7 @@ component extends="framework.one"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private array function getRoutes()
-  {
+  private array function getRoutes(){
     var entityName = 0;
     var entityReference = 0;
     var entityMetaData = 0;
@@ -255,16 +226,10 @@ component extends="framework.one"
 
     var resources = cacheGet( "resources-#this.name#" );
 
-    if(
-        isNull( resources ) or
-        request.reset or
-        not request.context.config.appIsLive
-      )
-    {
+    if( isNull( resources ) || request.reset || !request.context.config.appIsLive ){
       modelFiles = directoryList( this.mappings["/root"] & "/model", true, "name", "*.cfc", "name asc" );
 
-      for( var fileName in modelFiles )
-      {
+      for( var fileName in modelFiles ){
         listOfResources = listAppend( listOfResources, reverse( listRest( reverse( fileName ), "." )));
       }
 
