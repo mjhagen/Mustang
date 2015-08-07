@@ -9,27 +9,25 @@
     </div>
 
     <div class="well">
-      <h4>Message:</h4>
-      <p class="text-muted">#request.exception.cause.message#</p>
+      <cftry>
+        <h4>Message:</h4>
+        <p class="text-muted">#request.exception.cause.message#</p>
+        <cfcatch></cfcatch>
+      </cftry>
 
-      <h4>Detail:</h4>
-      <p class="text-muted">#request.exception.cause.detail#</p>
+      <cftry>
+        <h4>Detail:</h4>
+        <p class="text-muted">#request.exception.cause.detail#</p>
+        <cfcatch></cfcatch>
+      </cftry>
 
-      <cfif structKeyExists( request.exception, "TagContext" ) and
-            isArray( request.exception.TagContext ) and
-            arrayLen( request.exception.TagContext ) and
-            isStruct( request.exception.TagContext[1] ) and
-            structKeyExists( request.exception.TagContext[1], "template" ) and
-            structKeyExists( request.exception.TagContext[1], "line" ) and
-            isSimpleValue( request.exception.TagContext[1].template ) and
-            isSimpleValue( request.exception.TagContext[1].line ) and
-            len( trim( request.exception.TagContext[1].template )) and
-            len( trim( request.exception.TagContext[1].line ))>
+      <cftry>
         <h4>File:</h4>
         <p class="text-muted">#request.exception.TagContext[1].template# at line #request.exception.TagContext[1].line#</p>
-      </cfif>
+        <cfcatch></cfcatch>
+      </cftry>
     </div>
 
-    <cfdump var="#request.exception#" />
+    <cfdump var="#request.exception#" expand="false" />
   </div>
 </cfoutput>

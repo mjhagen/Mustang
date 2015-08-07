@@ -22,8 +22,8 @@
         </cfif>
         <br />Current FQA: <strong>#getfullyqualifiedaction()#</strong>
         <br />Language:
-        <cfloop array="#entityLoad( 'language' )#" index="language">
-          <a class="label label-#rc.currentlanguageid eq language.getID()?'info':'default'#" href="#buildURL(getfullyqualifiedaction(),'?languageid=#language.getID()#')#">#language.getName()#</a>
+        <cfloop array="#entityLoad( 'locale' )#" index="locale">
+          <a class="label label-#rc.currentLocaleID eq locale.getID()?'info':'default'#" href="#buildURL(getfullyqualifiedaction(),'?localeID=#locale.getID()#')#">#locale.getName()#</a>
         </cfloop>
         <br />Is logged in: #rc.auth.isLoggedIn#
       </small>

@@ -1,46 +1,46 @@
-<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
-                                   "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!DOCTYPE hibernate-mapping
+  PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
+  'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
-    <class entity-name="contact" lazy="true"
-        name="cfc:root.model.contact" table="contact">
-        <id name="id" type="string">
-            <column name="id"/>
-            <generator class="uuid"/>
-        </id>
-        <property name="deleted" type="boolean">
-            <column name="deleted"/>
-        </property>
-        <property name="sortorder" type="integer">
-            <column name="sortorder"/>
-        </property>
-        <property name="username" type="string">
-            <column length="64" name="username"/>
-        </property>
-        <property name="password" type="string">
-            <column length="144" name="password"/>
-        </property>
-        <property name="firstname" type="string">
-            <column length="32" name="firstname"/>
-        </property>
-        <property name="infix" type="string">
-            <column length="16" name="infix"/>
-        </property>
-        <property name="lastname" type="string">
-            <column length="64" name="lastname"/>
-        </property>
-        <property name="email" type="string">
-            <column length="128" name="email"/>
-        </property>
-        <property name="phone" type="string">
-            <column length="16" name="phone"/>
-        </property>
-        <property name="photo" type="string">
-            <column length="128" name="photo"/>
-        </property>
-        <property name="lastLoginDate" type="timestamp">
-            <column name="lastLoginDate"/>
-        </property>
-        <many-to-one class="cfc:root.model.securityrole"
-            column="securityroleid" name="securityrole"/>
-    </class>
+  <subclass discriminator-value="contact" entity-name="contact" extends="cfc:root.model.logged" lazy="true" name="cfc:root.model.contact">
+    <bag lazy="true" name="createdObjects" where="deleted!='true'">
+      <key column="createcontactid"/>
+      <one-to-many class="cfc:root.model.logged"/>
+    </bag>
+    <bag lazy="true" name="updatedObjects" where="deleted!='true'">
+      <key column="updatecontactid"/>
+      <one-to-many class="cfc:root.model.logged"/>
+    </bag>
+    <join table="contact">
+      <key column="id"/>
+      <property name="username" type="string">
+        <column length="64" name="username"/>
+      </property>
+      <property name="password" type="string">
+        <column length="144" name="password"/>
+      </property>
+      <property name="firstname" type="string">
+        <column length="32" name="firstname"/>
+      </property>
+      <property name="infix" type="string">
+        <column length="16" name="infix"/>
+      </property>
+      <property name="lastname" type="string">
+        <column length="64" name="lastname"/>
+      </property>
+      <property name="email" type="string">
+        <column length="128" name="email"/>
+      </property>
+      <property name="phone" type="string">
+        <column length="16" name="phone"/>
+      </property>
+      <property name="photo" type="string">
+        <column length="128" name="photo"/>
+      </property>
+      <property name="lastLoginDate" type="timestamp">
+        <column name="lastLoginDate"/>
+      </property>
+      <many-to-one class="cfc:root.model.securityrole" column="securityroleid" name="securityrole"/>
+    </join>
+  </subclass>
 </hibernate-mapping>

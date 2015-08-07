@@ -4,7 +4,7 @@
 
 <cfoutput>
   <div class="row centercenter">
-    <div class="col-lg-offset-3 col-lg-6">
+    <div class="col-lg-offset-2 col-lg-8">
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title">#rc.content.getTitle()#</h3>
@@ -28,8 +28,6 @@
           </cfif>
 
           <form class="form-horizontal" action="#buildURL( 'common:security.dologin' )#" method="post">
-            <input type="hidden" name="origin" value="#getSubsystem()#">
-
             <div class="form-group">
               <label for="username" class="col-lg-4 control-label">#i18n.translate('username')#</label>
               <div class="col-lg-8">

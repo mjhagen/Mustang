@@ -1,4 +1,4 @@
-component extends="basecfc.base"
+component extends="root.model.logged"
           persistent="true"
           table="contact"
           discriminatorvalue="contact"
@@ -19,8 +19,8 @@ component extends="basecfc.base"
   property name="name" persistent="false" inlist=1;
 
   property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid" inform=1 editable=1;
-  // property name="createdObjects" singularName="createdObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="createcontactid";
-  // property name="updatedObjects" singularName="updatedObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="updatecontactid";
+  property name="createdObjects" singularName="createdObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="createcontactid" lazy=1;
+  property name="updatedObjects" singularName="updatedObject" fieldtype="one-to-many" cfc="root.model.logged" FKColumn="updatecontactid" lazy=1;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public string function getFullname(){

@@ -55,17 +55,10 @@
       </div>
     </div>
     <div class="form-group">
-      <label for="phone_mobile" class="col-lg-3 control-label">#i18n.translate('phone_mobile')#</label>
+      <label for="phone" class="col-lg-3 control-label">#i18n.translate('phone')#</label>
       <div class="col-lg-9">
-        <input tabindex="6" class="form-control" id="phone_mobile" placeholder="#i18n.translate('placeholder-phone_mobile')#" name="phone_mobile" type="text"
-          value="#rc.data.getphone_mobile()#" />
-      </div>
-    </div>
-    <div class="form-group">
-      <label for="phone_direct" class="col-lg-3 control-label">#i18n.translate('phone_direct')#</label>
-      <div class="col-lg-9">
-        <input tabindex="7" class="form-control" id="phone_direct" placeholder="#i18n.translate('placeholder-phone_direct')#" name="phone_direct" type="text"
-          value="#rc.data.getphone_direct()#" />
+        <input tabindex="6" class="form-control" id="phone" placeholder="#i18n.translate('placeholder-phone')#" name="phone" type="text"
+          value="#rc.data.getphone()#" />
       </div>
     </div>
 

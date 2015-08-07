@@ -12,7 +12,7 @@ component output="false"
     param variables.entity        = fw.getSection();
     param array variables.submitButtons = [];
 
-  	variables.fw = fw;
+    variables.fw = fw;
 
     return this;
   }
@@ -263,8 +263,8 @@ component output="false"
     rc.submitButtons = variables.submitButtons;
     rc.fallbackView = "common:elements/edit";
 
-  	if( rc.modal ){
-  	  request.layout = false;
+    if( rc.modal ){
+      request.layout = false;
       rc.fallbackView = "common:elements/modaledit";
 
       if( rc.inline ){
