@@ -3,42 +3,9 @@ var th_last = '';
 
 // Provide modal inline edit functionality:
 // Used for one-to-many fields where you can add/remove unique items to a record
-jQuery( document ).ready( function( e ){
-  // TinyMCE Editor config:
-  tinymce.init({
-    selector  : "textarea",
-    statusbar : false,
-    rel_list  : [{ title: 'Lightbox', value: 'lightbox' }],
-    menubar   : false,
-    plugins   : 'code,cfimage,image,link,paste',
-    toolbar   : 'code | undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist outdent indent | link cfimage',
-
-    //use absolute urls
-    remove_script_host : false,
-    relative_urls : false
-  });
-
-  // JSON EDITOR:
-  var $container = $( '.jsoncontainer' );
-  if( $container.length )
-  {
-    _JSONeditor = new JSONEditor( $container[0], {
-      "modes"   : ["tree","text","form"],
-      "change"  : function()
-                  {
-                    // update hidden field, for saving:
-                    $container.next( "input" ).val( _JSONeditor.getText());
-                  }
-    });
-
-    // init with saved json:
-    var sourceJSON = $container.data( "value" );
-    if( sourceJSON.length )
-    {
-      var json = JSON.parse( window.atob( sourceJSON ));
-      _JSONeditor.set( json );
-    }
-  }
+jQuery( document ).ready( function( e ){  
+  
+  initFormelements( $( document) );
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   $( "#mainform" ).validator();
@@ -83,31 +50,6 @@ jQuery( document ).ready( function( e ){
     });
   });
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  $( 'input[type=file]' ).fileupload({
-    pasteZone   : null,
-    url         : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'upload'),
-    dataType    : 'json',
-    add         : function( e, data ){
-                    $( '.progress', $( this ).closest( 'div' )).show();
-                    data.submit();
-                  },
-    done        : function( e, data ){
-                    $( '.btn', $( this ).closest( 'div' )).hide();
-                    $( '.progress', $( this ).closest( 'div' )).hide();
-                    $( '.alert', $( this ).closest( 'div' )).addClass( 'alert-success' ).html( '<button type="button" class="close fileinput-remove">&times;</button>' + data.result.files[0].name ).show();
-
-                    $( 'input[name='+$( this ).data('name')+']' ).val( data.result.files[0].name );
-                    $( 'input[name='+$( this ).data('name')+'_uuid]' ).val( data.result.files[0].uuid );
-                  },
-    progressall : function( e, data ){
-                    var progress = parseInt( data.loaded / data.total * 100, 10 );
-                    $( '.progress .progress-bar', $( this ).closest( 'div' )).css(
-                      'width',
-                      progress + '%'
-                    );
-                  }
-  }).prop( 'disabled', !$.support.fileInput ).parent().addClass( $.support.fileInput ? undefined : 'disabled' );
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   $( document ).on( 'click', '.cancel-button', function(){
@@ -141,47 +83,7 @@ jQuery( document ).ready( function( e ){
     $( target ).modal({
       'show'  : true
     }).load( $( this ).attr( 'href' ), function( e ){
-      $( 'input[type=file]', $( this )).fileupload({
-        url         : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'upload'),
-        dataType    : 'json',
-        add         : function( e, data ){
-                        $( '.progress', $( this ).closest( 'div' )).show();
-                        data.submit();
-                      },
-        done        : function( e, data ){
-                        $( '.btn', $( this ).closest( 'div' )).hide();
-                        $( '.progress', $( this ).closest( 'div' )).hide();
-                        $( '.alert', $( this ).closest( 'div' )).addClass( 'alert-success' ).html( data.result.files[0].name ).show();
-
-                        $( 'input[name='+$( this ).data('name')+']' ).val( data.result.files[0].name );
-                        $( 'input[name='+$( this ).data('name')+'_uuid]' ).val( data.result.files[0].uuid );
-                      },
-        progressall : function( e, data ){
-                        var progress = parseInt( data.loaded / data.total * 100, 10 );
-                        $( '.progress .progress-bar', $( this ).closest( 'div' )).css(
-                          'width',
-                          progress + '%'
-                        );
-                      }
-      }).prop( 'disabled', !$.support.fileInput ).parent().addClass( $.support.fileInput ? undefined : 'disabled' );
-
-      $( 'textarea', $( this )).each( function(){
-        var editorID = $( this ).attr( "id" );
-        var textareaEl = $( this );
-
-        textareaEl.tinymce({
-          statusbar : false,
-          menubar   : false,
-          plugins   : 'paste',
-          height    : 150,
-          toolbar   : 'undo redo | bold italic underline | bullist numlist outdent indent'
-        });
-
-        $( target ).on( 'hidden.bs.modal', function(){
-          try{ textareaEl.tinymce().remove();}catch( e ){};
-        });
-      });
-
+      initFormelements( $( this ) );      
       $( 'input[type=text],textarea', $( this )).first().focus();
     });
 
@@ -300,18 +202,7 @@ jQuery( document ).ready( function( e ){
       success: function( html ){
         $editblock.html( html );
 
-        $( 'textarea', $editblock ).each( function(){
-          var editorID = $( this ).attr( "id" );
-          var textareaEl = $( this );
-
-          textareaEl.tinymce({
-            statusbar : false,
-            menubar   : false,
-            plugins   : '',
-            height    : 150,
-            toolbar   : 'undo redo | bold italic underline | bullist numlist outdent indent'
-          });
-        });
+        initFormelements( $editblock );
       },
       async: false
     };
@@ -320,4 +211,72 @@ jQuery( document ).ready( function( e ){
 
     $.ajax( _webroot + '/index.cfm?action=admin:' + entity + '.edit', settings );
   });
+	
+	function initFormelements( $container ){
+    $( 'textarea', $container ).each( function(){
+      var editorID = $( this ).attr( "id" );
+      var textareaEl = $( this );
+
+      textareaEl.tinymce({
+        statusbar : false,
+        rel_list  : [{ title: 'Lightbox', value: 'lightbox' }],
+        menubar   : false,
+        plugins   : 'code,cfimage,image,link,paste',
+        toolbar   : 'code | undo redo | bold italic underline | alignleft aligncenter alignright | bullist numlist outdent indent | link cfimage',
+    
+        //use absolute urls
+        remove_script_host : false,
+        relative_urls : false
+      });
+    });
+    
+    $( 'input[type=file]', $container ).fileupload({
+	    pasteZone   : null,
+	    url         : ajaxUrl( 'adminapi' + _subsystemDelimiter + 'crud' , 'upload'),
+	    dataType    : 'json',
+	    add         : function( e, data ){
+	                    $( '.progress', $( this ).closest( 'div' )).show();
+	                    data.submit();
+	                  },
+	    done        : function( e, data ){
+	                    $( '.btn', $( this ).closest( 'div' )).hide();
+	                    $( '.progress', $( this ).closest( 'div' )).hide();
+	                    $( '.alert', $( this ).closest( 'div' )).addClass( 'alert-success' ).html( '<button type="button" class="close fileinput-remove">&times;</button>' + data.result.files[0].name ).show();
+	
+	                    $( 'input[name='+$( this ).data('name')+']' ).val( data.result.files[0].name );
+	                    $( 'input[name='+$( this ).data('name')+'_uuid]' ).val( data.result.files[0].uuid );
+	                  },
+	    progressall : function( e, data ){
+	                    var progress = parseInt( data.loaded / data.total * 100, 10 );
+	                    $( '.progress .progress-bar', $( this ).closest( 'div' )).css(
+	                      'width',
+	                      progress + '%'
+	                    );
+	                  }
+	  }).prop( 'disabled', !$.support.fileInput ).parent().addClass( $.support.fileInput ? undefined : 'disabled' );
+		
+		// JSON EDITOR:
+	  var $jsoncontainer = $( '.jsoncontainer', $container );
+	  if( $jsoncontainer.length )
+	  {
+	    _JSONeditor = new JSONEditor( $jsoncontainer[0], {
+	      "modes"   : ["tree","text","form"],
+	      "change"  : function()
+	                  {
+	                    // update hidden field, for saving:
+	                    $jsoncontainer.next( "input" ).val( _JSONeditor.getText());
+	                  }
+	    });
+	
+	    // init with saved json:
+	    var sourceJSON = $jsoncontainer.data( "value" );
+	    if( sourceJSON.length )
+	    {
+	      var json = JSON.parse( window.atob( sourceJSON ));
+	      _JSONeditor.set( json );
+	    }
+	  }
+    
+    
+  };
 });
