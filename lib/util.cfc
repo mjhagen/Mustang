@@ -15,7 +15,7 @@
     </cfif>
 
     <cfloop collection="#stringVariables#" item="local.key">
-      <cfif not isNull( stringVariables[local.key] )>
+      <cfif  structKeyExists( stringVariables, local.key ) and not isNull( stringVariables[local.key] )>
         <cfset stringToParse = replaceNoCase( stringToParse, '###local.key###', stringVariables[local.key], 'all' ) />
       </cfif>
     </cfloop>
