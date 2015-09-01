@@ -99,6 +99,13 @@ component output="false"
 
     var object = entityNew( variables.entity );
     var entityProperties = getMetaData( object );
+    var property = "";
+    var indexNr = 0;
+    var orderNr = 0;
+    var columnName = "";
+    var columnsInList = [];
+    var orderByString = "";
+    var queryOptions = { ignorecase = true, maxResults = rc.maxResults, offset = rc.offset };
 
     rc.recordCounter  = 0;
     rc.deleteddata    = 0;
@@ -142,19 +149,50 @@ component output="false"
       rc.defaultSort = entityProperties.extends.defaultSort;
     }
 
-    if( not structKeyExists( rc, "alldata" )){
-      var listArgs = {
-        classColumn = rc.classColumn,
-        columns     = rc.columns,
-        d           = rc.d,
-        filters     = rc.filters,
-        filterType  = rc.filterType,
-        maxResults  = rc.maxResults,
-        offset      = rc.offset,
-        orderby     = rc.orderby,
-        showdeleted = rc.showdeleted,
-        startsWith  = rc.startsWith
-      };
+    if( len( trim( rc.orderby ))){
+      local.vettedOrderByString = "";
+
+      for( var orderField in listToArray( rc.orderby )){
+        if( orderField contains ';' ){
+          continue;
+        }
+
+        if( orderField contains ' ASC' || orderField contains ' DESC' ){
+          orderField = listFirst( orderField, ' ' );
+        }
+
+        if( structKeyExists( rc.properties, orderField )){
+          local.vettedOrderByString = listAppend( local.vettedOrderByString, orderField );
+        }
+      }
+
+      rc.orderby = local.vettedOrderByString;
+
+      if( len( trim( rc.orderby ))){
+        rc.defaultSort = rc.orderby & ( rc.d ? ' DESC' : '' );
+      }
+    }
+
+    rc.orderby = replaceNoCase( rc.defaultSort, ' ASC', '', 'all' );
+    rc.orderby = replaceNoCase( rc.orderby, ' DESC', '', 'all' );
+
+    if( rc.defaultSort contains ' DESC' ){
+      rc.d = 1;
+    } else if( rc.defaultSort contains ' ASC' ){
+      rc.d = 0;
+    }
+
+    for( orderByPart in listToArray( rc.defaultSort )){
+      orderByString = listAppend( orderByString, "mainEntity.#orderByPart#" );
+    }
+
+    if( len( trim( rc.startsWith ))){
+      rc.filters = [{
+        "field" = "name",
+        "filterOn" = replace( rc.startsWith, '''', '''''', 'all' )
+      }];
+      rc.filterType = "starts-with";
+    }
 
       for( var key in rc ){
         if( !isSimpleValue( rc[key] )){
@@ -164,11 +202,115 @@ component output="false"
         key = urlDecode( key );
 
         if( listFirst( key, "_" ) == "filter" && len( trim( rc[key] ))){
-          arrayAppend( listArgs.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) });
+        arrayAppend( rc.filters, { "field" = listRest( key, "_" ), "filterOn" = replace( rc[key], '''', '''''', 'all' ) });
         }
       }
 
-      rc.alldata = object.list( argumentsCollection = listArgs );
+    if( !structKeyExists( rc, "alldata" )){
+      if( arrayLen( rc.filters ))
+      {
+        var alsoFilterKeys = structFindKey( rc.properties, 'alsoFilter' );
+        var alsoFilterEntity = "";
+        var whereBlock = " WHERE 0 = 0 ";
+        var whereParameters = {};
+        var counter = 0;
+
+        if( rc.showdeleted == 0 ){
+          whereBlock &= " AND ( mainEntity.deleted IS NULL OR mainEntity.deleted = false ) ";
+        }
+
+        for( var filter in rc.filters ){
+          if( len( filter.field ) gt 2 && right( filter.field, 2 ) == "id" ){
+            whereBlock &= "AND mainEntity.#left( filter.field, len( filter.field ) - 2 )# = ( FROM #left( filter.field, len( filter.field ) - 2 )# WHERE id = :where_id )";
+            whereParameters["where_id"] = filter.filterOn;
+          } else {
+            if( filter.filterOn == "NULL" ){
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )# IS NULL ";
+            } else if( structKeyExists( rc.properties[filter.field], "cfc" )){
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )#.id = :where_#lCase( filter.field )# ";
+              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
+            } else {
+              if( rc.filterType == "contains" ){
+                filter.filterOn = "%#filter.filterOn#";
+              }
+
+              filter.filterOn = "#filter.filterOn#%";
+
+              whereBlock &= " AND ( ";
+              whereBlock &= " mainEntity.#lCase( filter.field )# LIKE :where_#lCase( filter.field )# ";
+              whereParameters["where_#lCase( filter.field )#"] = filter.filterOn;
+            }
+
+            for( var alsoFilterKey in alsoFilterKeys ){
+              if( alsoFilterKey.owner.name neq filter.field ){
+                continue;
+              }
+
+              counter++;
+              alsoFilterEntity &= " LEFT JOIN mainEntity.#listFirst( alsoFilterKey.owner.alsoFilter, '.' )# AS entity_#counter# ";
+              whereBlock &= " OR entity_#counter#.#listLast( alsoFilterKey.owner.alsoFilter, '.' )# LIKE '#filter.filterOn#' ";
+              whereParameters["where_#listLast( alsoFilterKey.owner.alsoFilter, '.' )#"] = filter.filterOn;
+            }
+            whereBlock &= " ) ";
+          }
+        }
+
+        if( structKeyExists( entityProperties, "where" ) && len( trim( entityProperties.where ))){
+          whereBlock &= entityProperties.where;
+        }
+
+        var HQLcounter  = " SELECT COUNT( mainEntity ) AS total ";
+        var HQLselector  = " SELECT mainEntity ";
+
+        var HQL = "";
+        HQL &= " FROM #lCase( variables.entity )# mainEntity ";
+        HQL &= alsoFilterEntity;
+        HQL &= whereBlock;
+
+        HQLcounter = HQLcounter & HQL;
+        HQLselector = HQLselector & HQL;
+
+        if( len( trim( orderByString ))){
+          HQLselector &= " ORDER BY #orderByString# ";
+        }
+
+        rc.alldata = ORMExecuteQuery( HQLselector, whereParameters, queryOptions );
+
+        if( arrayLen( rc.alldata ) gt 0 ){
+          rc.recordCounter = ORMExecuteQuery( HQLcounter, whereParameters, { ignorecase = true })[1];
+        }
+      } else {
+        var HQL = " FROM #lCase( variables.entity )# mainEntity ";
+
+        if( rc.showDeleted ){
+          HQL &= " WHERE mainEntity.deleted = TRUE ";
+        } else {
+          HQL &= " WHERE ( mainEntity.deleted IS NULL OR mainEntity.deleted = FALSE ) ";
+        }
+
+        if( len( trim( orderByString ))){
+          HQL &= " ORDER BY #orderByString# ";
+        }
+
+        try{
+          rc.alldata = ORMExecuteQuery( HQL, {}, queryOptions );
+        } catch( any e ) {
+          writeDump( e );
+          abort;
+          rc.alldata = [];
+        }
+
+        if( arrayLen( rc.alldata ) gt 0 ){
+          rc.recordCounter = ORMExecuteQuery( "SELECT COUNT( e ) AS total FROM #lCase( variables.entity )# AS e WHERE e.deleted != :deleted", { "deleted" = true }, { ignorecase = true })[1];
+          rc.deleteddata = ORMExecuteQuery( "SELECT COUNT( mainEntity.id ) AS total FROM #lCase( variables.entity )# AS mainEntity WHERE mainEntity.deleted = :deleted", { "deleted" = true } )[1];
+
+          if( rc.showdeleted ){
+            rc.recordCounter = rc.deleteddata;
+          }
+        }
+      }
     }
 
     rc.allColumns     = {};
@@ -244,13 +386,13 @@ component output="false"
       };
       fw.redirect( "admin:#fw.getSection()#.default" );
     }
-    return edit( rc = rc );
+    edit( rc = rc );
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function view( rc ){
     rc.editable = false;
-    return edit( rc = rc );
+    edit( rc = rc );
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -361,16 +503,19 @@ component output="false"
       fw.redirect( "admin:#fw.getSection()#.default" );
     }
 
+    transaction {
     var entityToDelete = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
 
     if( !isNull( entityToDelete )){
       entityToDelete.save({ "deleted" = true });
 
       if( entityToDelete.hasProperty( "log" )){
-        local.logentry = entityNew( "logentry", { entity = entityToDelete } );
-        local.logaction = entityLoad( "logaction", { name = "removed" }, true );
-        rc.log = local.logentry.enterIntoLog( action = local.logaction );
+          var logentry = entityNew( "logentry", { entity = entityToDelete } );
+          rc.log = logentry.enterIntoLog( "removed" );
       }
+      }
+
+      transactionCommit();
     }
 
     fw.redirect( ".default" );
@@ -378,16 +523,19 @@ component output="false"
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function restore( rc ){
+    transaction {
     var entityToRestore = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
 
     if( !isNull( entityToRestore )){
       entityToRestore.save({ "deleted" = false });
 
       if( entityToRestore.hasProperty( "log" )){
-        local.logentry = entityNew( "logentry", { entity = entityToRestore } );
-        local.logaction = entityLoad( "logaction", { name = "restored" }, true );
-        rc.log = local.logentry.enterIntoLog( action = local.logaction );
+          var logentry = entityNew( "logentry", { entity = entityToRestore } );
+          rc.log = logentry.enterIntoLog( "restored" );
       }
+      }
+
+      transactionCommit();
     }
 
     fw.redirect( ".view", "#variables.entity#id" );
@@ -411,6 +559,7 @@ component output="false"
       fw.redirect( "admin:#fw.getSection()#.default" );
     }
 
+    transaction {
     // Load existing, or create a new entity
     if( structKeyExists( rc, "#variables.entity#id" )){
       rc.data = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
@@ -420,7 +569,10 @@ component output="false"
     }
 
     // Log create/update time and user if( object supprts it:
-    rc.data = rc.data.save( formData = form );
+      rc.data = rc.data.save( form );
+
+      transactionCommit();
+    }
 
     if( !( structKeyExists( rc, "dontredirect" ) && rc.dontredirect )){
       if( structKeyExists( rc, "returnto" )){

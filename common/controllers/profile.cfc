@@ -21,6 +21,7 @@
 
   <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="save">
+    <cftransaction>
     <cfset var currentUser = entityLoadByPK( "contact", rc.auth.userid ) />
 
     <cfparam name="rc.firstname" default="" />
@@ -44,6 +45,8 @@
 		</cfif>
 
     <cfset currentUser.save( formFields )>
+      <cftransaction action="commit" />
+    </cftransaction>
 
     <cfset session.auth.user = entityLoadByPK( "contact", rc.auth.userID ) />
     <cfset session.alert = {

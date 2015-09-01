@@ -2,38 +2,24 @@
   PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
   'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
-  <class entity-name="logged" lazy="true" name="cfc:root.model.logged" table="logged">
+  <class entity-name="logged" name="cfc:root.model.logged" table="logged" lazy="true">
     <id name="id" type="string">
-      <column length="255" name="id"/>
+      <column name="id"/>
       <generator class="uuid"/>
     </id>
     <discriminator column="entityName"/>
-    <property name="deleted" type="boolean">
-      <column name="deleted"/>
-    </property>
-    <property name="sortorder" type="integer">
-      <column name="sortorder"/>
-    </property>
-    <property name="name" type="string">
-      <column length="128" name="name"/>
-    </property>
-    <property name="createDate" type="timestamp">
-      <column name="createdate"/>
-    </property>
-    <property name="createIP" type="string">
-      <column length="15" name="createip"/>
-    </property>
-    <property name="updateDate" type="timestamp">
-      <column name="updatedate"/>
-    </property>
-    <property name="updateIP" type="string">
-      <column length="15" name="updateip"/>
-    </property>
+    <property name="name" type="string"><column length="128" name="name"/></property>
+    <property name="deleted" type="boolean"><column name="deleted"/></property>
+    <property name="sortorder" type="integer"><column name="sortorder"/></property>
+    <property name="createDate" type="timestamp"><column name="createDate"/></property>
+    <property name="createIP" type="string"><column length="15" name="createIP"/></property>
+    <property name="updateDate" type="timestamp"><column name="updateDate"/></property>
+    <property name="updateIP" type="string"><column length="15" name="updateIP"/></property>
     <many-to-one class="cfc:root.model.contact" column="createcontactid" name="createContact"/>
     <many-to-one class="cfc:root.model.contact" column="updatecontactid" name="updateContact"/>
-    <bag lazy="true" name="logentries">
-        <key column="loggedid"/>
-        <one-to-many class="cfc:root.model.logentry"/>
+    <bag name="logEntries">
+      <key column="entityid"/>
+      <one-to-many class="cfc:root.model.logentry"/>
     </bag>
   </class>
 </hibernate-mapping>

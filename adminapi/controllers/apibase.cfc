@@ -1,22 +1,16 @@
-component
-{
+component {
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function init( fw )
-  {
+  public any function init( fw ) {
     variables.fw = fw;
 
     request.layout = false;
-
     request.context.util.setCFSetting( "showdebugoutput", false );
 
     return this;
   }
 
-  public void function before( rc ){}
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private String function returnAsJSON( Any variable )
-  {
+  private String function returnAsJSON( Any variable ){
     var statusCode = 200; // default
     var statusCodes = {
       "error"       = 500,
@@ -26,23 +20,17 @@ component
       "no-content"  = 204
     };
 
-    if(
-        isStruct( variable ) and
+    if( isStruct( variable ) and
         structKeyExists( variable, "status" ) and
-        structKeyExists( statusCodes, variable.status )
-      )
-    {
+        structKeyExists( statusCodes, variable.status )){
       statusCode = statusCodes[variable.status];
     }
 
     var pageContext = getPageContext();
 
-    if( listFindNoCase( "lucee,railo", server.ColdFusion.ProductName ))
-    {
+    if( listFindNoCase( "lucee,railo", server.ColdFusion.ProductName )){
       pageContext.clear();
-    }
-    else
-    {
+    } else {
       pageContext.getcfoutput().clearall();
     }
 

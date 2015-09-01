@@ -1,5 +1,4 @@
-component extends="framework.zero"
-{
+component extends="framework.zero" {
   this.root = getDirectoryFromPath( getBaseTemplatePath()) & "../..";
   this.configFiles = this.root & "/config";
 
@@ -16,13 +15,19 @@ component extends="framework.zero"
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function onApplicationStart(){
     super.onApplicationStart();
-    application.jl = new javaloader.JavaLoader( ["#this.root#/lib/java/java-image-scaling-0.8.5.jar"] );
+
+    lock name="_cfimage_#this.name#_appstart" timeout="5" type="exclusive" {
+      application.jl = new javaloader.JavaLoader( ["#this.root#/lib/java/java-image-scaling-0.8.5.jar"] );
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function onRequestStart(){
     super.onRequestStart();
-    variables.jl = application.jl;
+
+    lock name="_cfimage_#this.name#_reqstart" timeout="5" type="readonly" {
+      variables.jl = application.jl;
+    }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +60,8 @@ component extends="framework.zero"
     // setup resize actions:
     switch( url.size ){
       case "square":
-        resized = __processSquare( sourceImage );
+      case "og":
+        resized = __processSquare( sourceImage, url.size );
         break;
 
       default:
@@ -91,7 +97,6 @@ component extends="framework.zero"
     }
 
     var bufferedImage = imageGetBufferedImage( sourceImage );
-
     switch( method )
     {
       case "force": // (distorts the image)
@@ -151,20 +156,24 @@ component extends="framework.zero"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private any function __processSquare( sourceImage ){
-    var type = "square";
+  private any function __processSquare( sourceImage, type ){
+    var newSize = variables.config.imageSizes[type][1];
+
+    // add 1% padding to combat resize bug found by J. Denk.
+    var padding = ceiling( newSize / 100 );
+    var paddedSize = newSize + padding;
 
     if( sourceImage.width > sourceImage.height ){
-      resized = resize( sourceImage, variables.config.imageSizes[type][1], "", "thumbnail" );
+      resized = resize( sourceImage, paddedSize, "", "thumbnail" );
     } else {
-      resized = resize( sourceImage, "", variables.config.imageSizes[type][1], "thumbnail" );
+      resized = resize( sourceImage, "", paddedSize, "thumbnail" );
     }
 
     var crop = [
-      int(( resized.width / 2 - variables.config.imageSizes[type][1] / 2 )),
-      int(( resized.height / 2 - variables.config.imageSizes[type][1] / 2 )),
-      int( variables.config.imageSizes[type][1] ),
-      int( variables.config.imageSizes[type][1] )
+      int(( resized.width / 2 - newSize / 2 )),
+      int(( resized.height / 2 - newSize / 2 )),
+      int( newSize ),
+      int( newSize )
     ];
 
     return resized.getSubimage( crop[1], crop[2], crop[3], crop[4] );

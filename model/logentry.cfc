@@ -3,29 +3,33 @@ component extends="root.model.logged"
           discriminatorValue="logentry"
           joinColumn="id"
           defaultSort="createDate DESC"
-          classColumn="logaction"
-{
-  property name="note"       fieldType="column" ORMType="string" length=1024 inform=1 orderinform=6 editable=1 required=1;
-  property name="attachment" fieldType="column" ORMType="string" length=128 inform=1 orderinform=7 editable=1 formfield="file";
-  property name="logaction"  fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid" inform=1 orderinform=3 inlist=1;
-  property name="entity"     fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inlist=1;
-  property name="savedState" fieldType="column" ORMType="string" length=4000 dataType="json" inform=1;
+          classColumn="logaction" {
+  property name="entity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid"
+    inform=1 orderinform=1 inlist=1;
 
-  property persistent="false" name="createContact" inform=1 orderinform=1 inlist=1;
-  property persistent="false" name="createDate" inform=1 orderinform=2 inlist=1;
+  property name="logaction" fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid"
+    inform=1 orderinform=2 inlist=1;
+
+  property persistent=0 name="createContact"
+    inform=1 orderinform=3;
+
+  property persistent=0 name="createDate"
+    inform=1 orderinform=4 inlist=1;
+
+  property name="savedState" fieldType="column" ORMType="string" length=4000 dataType="json"
+    inform=1 orderinform=5;
+
+  property name="note" fieldType="column" ORMType="string" length=1024
+    inform=1 orderinform=6 editable=1 required=1 inlist=1;
+
+  property name="attachment" fieldType="column" ORMType="string" length=128
+    inform=1 orderinform=7 editable=1 formfield="file";
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function init()
-  {
-    return this;
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function getName()
-  {
+  public string function getName(){
     var entity = getEntity();
-    if( !isNull( entity ))
-    {
+
+    if( !isNull( entity )){
       return entity.getName() & " log";
     }
 
@@ -33,52 +37,36 @@ component extends="root.model.logged"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  function enterIntoLog( action, Struct newState={} )
-  {
-    var newStateAsJSON = "";
-    var tempEntity = this.getEntity();
-    var prevLogEntry = entityLoad( "logentry", { entity = this.getEntity()}, "createDate DESC", { maxResults = 1 } );
+  public any function enterIntoLog( string action="init", struct newState={}){
+    transaction {
+      var entityToLog = getEntity();
+      var logaction = 0;
 
-    if( isDefined( "action" ) and isSimpleValue( action ))
-    {
-      if( len( trim( action )))
-      {
-        action = entityLoad( "logaction", { name = action }, true );
+      if( len( trim( action ))){
+        logaction = entityLoad( "logaction", { name = action }, true );
       }
-      else
-      {
-        structDelete( arguments, "action" );
+
+      if( isNull( logaction )){
+        logaction = entityLoad( "logaction", { name = "init" }, true );
       }
+
+      if( structCount( newState ) eq 0 ){
+        newState = {
+          "init" = true,
+          "name" = entityToLog.getName()
+        };
+      }
+
+      save({
+        savedState = serializeJSON( newState ),
+        logaction = logaction.getID(),
+        entity = entityToLog.getID()
+      });
+
+      entitySave( this );
+
+      transactionCommit();
     }
-
-    if( not isDefined( "action" ))
-    {
-      action = entityLoad( "logaction", { name = "Init" }, true );
-    }
-
-    if( structCount( newState ) eq 0 )
-    {
-      newState = {
-        "init" = true,
-        "name" = this.getEntity().getName()
-      };
-    }
-
-    newStateAsJSON = serializeJSON( newState );
-
-    setCreateDate( now());
-    setCreateIP( cgi.remote_host );
-    setSavedState( newStateAsJSON );
-    setLogaction( action );
-
-    if( isDefined( "request.context.auth.user" ))
-    {
-      setCreateContact( request.context.auth.user );
-    }
-
-    this.getEntity().addLogentry( this );
-
-    entitySave( this );
 
     return this;
   }

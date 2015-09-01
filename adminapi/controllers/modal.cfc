@@ -2,8 +2,6 @@ component extends="apibase"
 {
   public void function before( rc )
   {
-    super.before( rc = rc );
-
     if( structKeyExists( rc, "modalContentAsJSON" ) and len( trim( rc.modalContentAsJSON )) and isJSON( rc.modalContentAsJSON ))
     {
       rc.modalContent = deserializeJSON( rc.modalContentAsJSON );

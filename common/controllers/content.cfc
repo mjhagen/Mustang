@@ -1,100 +1,99 @@
-<cfcomponent output="false">
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="init" returntype="any" access="public" output="false">
-  	<cfargument name="fw" type="component" required="true" />
-  	<cfset variables.fw = fw />
-    <cfreturn this />
-  </cffunction>
+component{
+  public any function init( fw ){
+    variables.fw = fw;
+    return this;
+  }
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
-  <cffunction name="getContent">
-    <cfset rc.displaytitle = rc.i18n.translate( fw.getfullyqualifiedaction()) />
+  public void function get( rc ){
+    var fqa = fw.getfullyqualifiedaction();
+    rc.displaytitle = rc.i18n.translate( fqa );
 
-    <cfquery dbtype="HQL" name="rc.content" ormoptions="#{cacheable=true}#">
-      SELECT  c
+    // fetch content
+    var hql = "FROM content c WHERE c.fullyqualifiedaction = :fqa AND c.locale.id = :locale AND c.deleted != true";
+    var params = {
+          fqa = fqa,
+          locale = rc.currentlocaleID
+        };
+    var options = {
+          cacheable = true
+        };
+    var content = ormExecuteQuery( hql, params, options );
+        
+    if( arrayLen( content )){
+      rc.content = content[1];
+    }
 
-      FROM    content c
+    // setup navigation
+    if( !structKeyExists( rc, "topnav" )){
+      rc.topnav = "";
+    }
+    
+    rc.subnavHideHome = false;
 
-      WHERE c.fullyqualifiedaction = <cfqueryparam value="#fw.getfullyqualifiedaction()#" />
-        AND c.locale.id = <cfqueryparam value="#rc.currentlocaleID#" />
-        AND c.deleted != <cfqueryparam cfsqltype="cf_sql_tinyint" value="1" />
-    </cfquery>
+    if( fw.getSubsystem() == 'admin' ){
+      var reload = true;
 
-    <cfif arrayLen( rc.content )>
-      <cfset rc.content = rc.content[1] />
-    <cfelse>
-      <cfset structDelete( rc, "content" ) />
-    </cfif>
+      lock scope="session" timeout="5" type="readonly" {
+        if( structKeyExists( session, "subnav" )){
+          rc.subnav = session.subnav;
+          reload = false;
+        }
+      }
 
-    <cfif not isDefined( "rc.topnav" )>
-      <cfset rc.topnav = "" />
-    </cfif>
+      if( !rc.config.appIsLive || structKeyExists( rc, "reload" )){
+        reload = true;
+      }
 
-    <cfset rc.subnavHideHome = false />
+      if( reload ){
+        rc.subnav = "";
 
-    <cfif fw.getSubsystem() eq 'admin'>
-      <cfset local.reload = true />
+        if( rc.auth.isLoggedIn && structKeyExists( rc.auth, "role" ) && isObject( rc.auth.role )){
+          var roleSubnav = rc.auth.role.getMenuList();
+        }
 
-      <cflock scope="session" timeout="5">
-        <cfif structKeyExists( session, "subnav" )>
-          <cfset rc.subnav = session.subnav />
-          <cfset local.reload = false />
-        </cfif>
-      </cflock>
+        if( isNull( roleSubnav )){
+          var roleSubnav = "";
+        }
 
-      <cfif not rc.config.appIsLive or structKeyExists( rc, "reload" )>
-        <cfset local.reload = true />
-      </cfif>
+        if( len( trim( roleSubnav ))){
+          for( var navItem in listToArray( roleSubnav )){
+            if( navItem == "-" || rc.auth.role.can( "view", navItem )){
+              rc.subnav = listAppend( rc.subnav, navItem );
+            }
+          }
+        } else {
+          var hiddenMenuitems = "base";
+          var subnav = [];
+          var tempSortOrder = 9001;
 
-      <cfif local.reload>
-        <cfset rc.subnav = "" />
+          for( var entityPath in directoryList( fw.mappings['/root'] & '/model', true, 'name', '*.cfc' )){
+            var entityName = reverse( listRest( reverse( getFileFromPath( entityPath )), "." ));
+            var sortOrder = tempSortOrder++;
+            var entity = getMetaData( createObject( "root.model." & entityName ));
 
-        <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "role" ) and isObject( rc.auth.role )>
-          <cfset local.roleSubnav = rc.auth.role.getMenuList() />
-        </cfif>
+            if( structKeyExists( entity, "hide" ) ||
+                listFindNoCase( hiddenMenuitems, entityName ) ||
+                ( rc.auth.isLoggedIn && !rc.auth.role.can( "view", entityName ))) {
+              continue;
+            }
 
-        <cfif isNull( local.roleSubnav )>
-          <cfset local.roleSubnav = "" />
-        </cfif>
+            if( structKeyExists( entity, "sortOrder" )){
+              sortOrder = entity["sortOrder"];
+            }
 
-        <cfif len( trim( local.roleSubnav ))>
-          <cfloop list="#local.roleSubnav#" index="local.navItem">
-            <cfif local.navItem eq "-" or rc.auth.role.can( "view", local.navItem )>
-              <cfset rc.subnav = listAppend( rc.subnav, local.navItem ) />
-            </cfif>
-          </cfloop>
-        <cfelse>
-          <cfset local.hiddenMenuitems = "base" />
-          <cfset local.subnav = [] />
-          <cfset local.tempSortOrder = 9001 />
+            subnav[sortOrder] = entityName;
+          }
 
-          <cfloop array="#directoryList( fw.mappings['/root'] & '/model', true, 'name', '*.cfc' )#" index="local.entityPath">
-            <cfset local.entityName = reverse( listRest( reverse( getFileFromPath( local.entityPath )), "." )) />
-            <cfset local.sortOrder = local.tempSortOrder++ />
-            <cfset local.entity = getMetaData( createObject( "root.model." & local.entityName )) />
+          rc.subnav = arrayToList( subnav );
+        }
+      }
 
-            <cfif structKeyExists( local.entity, "hide" ) or
-                  listFindNoCase( local.hiddenMenuitems, local.entityName ) or
-                  ( rc.auth.isLoggedIn and not rc.auth.role.can( "view", local.entityName ))>
-              <cfcontinue />
-            </cfif>
+      lock scope="session" timeout="5" type="exclusive" {
+        session.subnav = rc.subnav;
+      }
+    }
 
-            <cfif structKeyExists( local.entity, "sortOrder" )>
-              <cfset local.sortOrder = local.entity["sortOrder"] />
-            </cfif>
-
-            <cfset local.subnav[local.sortOrder] = local.entityName />
-          </cfloop>
-
-          <cfset rc.subnav = arrayToList( local.subnav ) />
-        </cfif>
-      </cfif>
-
-      <cflock scope="session" timeout="5">
-        <cfset session.subnav = rc.subnav />
-      </cflock>
-    </cfif>
-
-    <cfset rc.design = createObject( "root.lib.design" ).load() />
-  </cffunction>
-</cfcomponent>
+    // load design
+    rc.design = createObject( "root.lib.design" ).load();
+  }
+}

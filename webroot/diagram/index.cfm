@@ -1,41 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
   <head>
-    <title>Entity Relationship</title>
+    <title>ORM Diagram</title>
+    <style>
+      html, body, .container, .panzoom{ height: 100%; width:100%; }
+      html, body{ margin:0; padding:0; }
+      .container{ overflow:hidden; }
+      img{width:100%;height:100%;}
+    </style>
   </head>
   <body>
-    <cfscript>
-      jl = new javaloader.javaloader( loadColdFusionClassPath = true, loadPaths = [
-        "#request.lmPath#\lib\oy-lm-1.4.jar",
-        "#request.lmPath#\bin\junit-3.8.1.jar"
-      ] );
-
-      Configuration = jl.create( "org.hibernate.cfg.Configuration" );
-      HBMCtoGRAPH = jl.create( "com.oy.shared.lm.ext.HBMCtoGRAPH" );
-      TaskOptions = jl.create( "com.oy.shared.lm.ant.TaskOptions" );
-      GRAPHtoDOTtoGIF = jl.create( "com.oy.shared.lm.out.GRAPHtoDOTtoGIF" );
-
-      conf = Configuration.init();
-
-      for( hbmxmlFile in directoryList( request.modelpath, false, "path", "*.hbmxml" ))
-      {
-        conf.addXML( replace( fileRead( hbmxmlFile ), 'cfc:root.model.', '', 'all' ));
-      }
-
-      conf.buildMappings();
-
-      opt = TaskOptions.init();
-      opt.caption = "Diagram of ORM";
-      opt.colors = "##FCE08B, black, blue";
-
-      graph = HBMCtoGRAPH.load( opt, conf );
-
-      GRAPHtoDOTtoGIF.transform(
-        graph,
-        "output.dot", expandPath( "./output.gif" ), "#request.lmPath#\bin\graphviz-2.4\bin\dot.exe"
-      );
-    </cfscript>
-    <img src="output.gif" />
+    <div class="container">
+      <div class="panzoom">
+        <cfset local.d = new diagram() />
+        <cfset local.d.setReload( structKeyExists( url, "reload" ) && isBoolean( url.reload ) && url.reload ) />
+        <cfoutput>#local.d.get()#</cfoutput>
+      </div>
+    </div>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="jquery.panzoom.min.js"></script>
+    <script src="jquery.mousewheel.min.js"></script>
+    <script src="diagram.js"></script>
   </body>
 </html>
-<cfsetting showdebugoutput=false />

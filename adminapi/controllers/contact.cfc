@@ -78,4 +78,22 @@
 
     <cfset returnAsJSON( result ) />
   </cffunction>
+
+  <cffunction name="checkAvailability">
+    <cfargument name="rc">
+    <cfif structKeyExists( rc , 'email' )>
+      <cfset local.tempuser = entityLoad( 'contact', { email = rc.email, deleted = false })>
+	    
+	    <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "userID" )>
+        <cfset local.user = entityLoadByPK( 'contact', rc.auth.userID )>
+		    <cfif rc.email eq local.user.getEmail()>
+				  <!--- if user logged in, user email is allowed --->
+				  <cfset local.tempuser = []>
+        </cfif>
+      </cfif>
+	    
+	    <cfheader statuscode="#arrayLen( local.tempuser ) ? '409' : '200'#">
+	    <cfset returnAsJSON('')>
+		</cfif>
+  </cffunction>
 </cfcomponent>

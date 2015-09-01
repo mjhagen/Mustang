@@ -1,3 +1,4 @@
 {
-  "appIsLive" : false
+  "debugIP" : "127.0.0.1",
+  "appIsLive" : true
 }

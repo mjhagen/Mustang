@@ -1,8 +1,12 @@
 component extends="root.model.logged"
           persistent=true
-          table="text"
-          discriminatorcolumn="type"
           hide=true
+
+          discriminatorValue="text" // in logged
+
+          table="text"
+          discriminatorColumn="type"
+          joinColumn="id"
 {
   property name="title" fieldType="column" length=128 inlist=1;
   property name="body" fieldType="column" ORMType="text";

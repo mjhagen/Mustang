@@ -1,30 +1,15 @@
 component{
-  variables.languageFileName = "";
-
-  lock scope="session" timeout=5 type="readonly"{
-    variables.localeID = session.localeID;
-  }
-
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public i18n function init( string locale = request.context.config.defaultLanguage ){
     variables.languageFileName = locale & ".json";
+    variables.localeID = "";
     return this;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public string function translate( required string label, string localeID = variables.localeID, string alternative = "", struct stringVariables = {}, boolean capFirst = true ){
-    if( isNull( alternative ) or not len( trim( alternative ))){
+  public string function translate( required string label, string localeID = variables.localeID, string alternative, struct stringVariables = {}, boolean capFirst = true ){
+    if( isNull( alternative )){
       alternative = label;
-    }
-
-    if( not structKeyExists( request, "infLoopGuard" )){
-      request.infLoopGuard = 0;
-    }
-
-    request.infLoopGuard++;
-
-    if( request.infLoopGuard gt 4 ){
-      return alternative;
     }
 
     var result = "";
@@ -42,7 +27,7 @@ component{
     }
 
     if( !len( trim( translation ))){
-      translation = alternative;
+      translation = capFirst ? request.context.util.capFirst( alternative ) : alternative;
 
       // Try some default translation options on FQAs
       if( listLen( label, ":" ) == 2 && listLen( label, "." ) == 2 ){
@@ -83,9 +68,7 @@ component{
       result = replaceNoCase( result, _label_, translate( mid( _label_, 2, len( _label_ ) - 2 )));
     }
 
-    structDelete( request, "infLoopGuard" );
-
-    return capFirst ? request.context.util.capFirst( result ) : result;
+    return result;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

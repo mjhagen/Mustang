@@ -65,27 +65,22 @@ component{
 
       // Log login action:
       if( rc.config.log ){
-        var securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
-        var loginEvent = entityNew( "logentry" );
-        entitySave( loginEvent );
-        loginEvent.save( {
-          "logaction"     = securityLogAction.getID(),
-          "note"          = "Logged in",
-          "createContact" = user.getID(),
-          "createDate"    = now(),
-          "createIP"      = cgi.remote_addr,
-          "updateContact" = user.getID(),
-          "updateDate"    = now(),
-          "updateIP"      = cgi.remote_addr,
-          "deleted"       = false
-        });
+        transaction {
+          var logentry = entityNew( "logentry" );
+          entitySave( logentry );
+          logentry.save({ note = "Logged in", entity = user.getID()}).enterIntoLog( "security" );
+          transactionCommit();
+        }
       }
     }
 
     if( !rc.dontRedirect ){
       var loginscript = session.auth.role.getLoginScript();
-
-      if( isNull( loginscript ) || !len( trim( loginscript ))){
+      
+      if( structKeyExists( rc , 'returnpage') ){
+      	loginscript = rc.returnpage;  
+      }
+      else if( isNull( loginscript ) || !len( trim( loginscript ))){
         loginscript = "#variables.frameworkConfig["defaultSubsystem"]#:";
       }
 
@@ -106,22 +101,13 @@ component{
       };
     }
 
-    if( rc.config.log and isDefined( "rc.auth.userid" ) ){
-      var user = entityLoadByPK( "contact", rc.auth.userid );
-      var securityLogAction = entityLoad( "logaction", { "name" = "security" }, true );
-      var logoutEvent = entityNew( "logentry" );
-      entitySave( logoutEvent );
-      logoutEvent.save( {
-        "logaction"     = securityLogAction.getID(),
-        "note"          = "Logged out",
-        "createContact" = user.getID(),
-        "createDate"    = now(),
-        "createIP"      = cgi.remote_addr,
-        "updateContact" = user.getID(),
-        "updateDate"    = now(),
-        "updateIP"      = cgi.remote_addr,
-        "deleted"       = false
-      });
+    if( rc.config.log && isDefined( "rc.auth.userid" ) ){
+      transaction {
+        var logentry = entityNew( "logentry" );
+        entitySave( logentry );
+        logentry.save({ note = "Logged out", entity = rc.auth.userid }).enterIntoLog( "security" );
+        transactionCommit();
+      }
     }
 
     if( fw.getSubsystem() == "api" || listFirst( cgi.PATH_INFO, "/" ) == "api" || ( fw.getSubsystem() == "admin" && fw.getSection() == "api" )){
