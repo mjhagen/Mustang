@@ -1,14 +1,12 @@
 <cfcomponent output="false">
   <cfscript>
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public any function init() {
       return this;
     }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    public void function nil() {}
+    public void function nil() {
+    }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public void function parseStringVariables( required string stringToParse, struct stringVariables={}) {
       if( not isDefined( "stringVariables" ) or not structCount( stringVariables )) {
         return stringToParse;
@@ -70,7 +68,6 @@
       }
     }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public string function generatePassword( numeric length = 8, string type = "uc,lc,num" ) {
       if( length <= 0 ) {
         throw( type="util.generatePassword", message = "generatePassword(): Length must be > 0" );
@@ -118,7 +115,6 @@
       return result;
     }
 
-    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     public string function capFirst( required word ) {
       word = trim( word );
 
@@ -138,7 +134,7 @@
      * @param sortType  Text, textnocase, or numeric. (Optional)
      * @param delim     Delimiter used for temporary data storage. Must not exist in data. Defaults to a period. (Optional)
      * @return Returns a sorted array.
-     * @author Nathan Dintenfass (&#110;&#97;&#116;&#104;&#97;&#110;&#64;&#99;&#104;&#97;&#110;&#103;&#101;&#109;&#101;&#100;&#105;&#97;&#46;&#99;&#111;&#109;)
+     * @author Nathan Dintenfass
      * @version 1, April 4, 2013
      */
     public array function arrayOfStructsSort( required array aOfS, required string key ){
@@ -176,7 +172,6 @@
     }
   </cfscript>
 
-  <!--- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ --->
   <cffunction name="setCFSetting" output="false" access="public">
     <cfargument name="settingName" type="string" required="true" hint="requesttimeout,showdebugoutput,enablecfoutputonly" />
     <cfargument name="settingValue" type="any" required="true" />
