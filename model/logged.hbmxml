@@ -19,7 +19,7 @@
     <many-to-one class="cfc:root.model.contact" column="updatecontactid" name="updateContact"/>
     <bag name="logEntries">
       <key column="entityid"/>
-      <one-to-many class="cfc:root.model.logentry"/>
+      <one-to-many class="cfc:root.model.logged"/>
     </bag>
   </class>
 </hibernate-mapping>

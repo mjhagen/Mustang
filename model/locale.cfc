@@ -1,8 +1,7 @@
 component extends="basecfc.base"
           persistent=true
           table="locale"
-          cacheuse="read-only"
-          hide=true {
+          cacheuse="read-only" {
   property name="language" fieldType="many-to-one" cfc="root.model.language" FKColumn="languageid" inform=1 editable=1;
   property name="country" fieldType="many-to-one" cfc="root.model.country" FKColumn="countryid" inform=1 editable=1;
   property name="texts" fieldType="one-to-many" cfc="root.model.text" FKColumn="localeid" singularName="text" where="deleted!='1'";

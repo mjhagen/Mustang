@@ -1,0 +1,1 @@
+<cfoutput>#view( "elements/standard", { body = body })#</cfoutput>

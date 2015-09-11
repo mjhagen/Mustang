@@ -1,9 +1,9 @@
 component extends="root.model.text"
           persistent="true"
+          table="text"
+          discriminatorvalue="content"
           hint="admin texts (like pages) are stored in here"
           defaultSort="fullyqualifiedaction"
-          table="content"
-          discriminatorValue="content"
 {
   property name="fullyqualifiedaction"  fieldType="column" length=128  orderinform=1   inform=1 editable=1 listmask='<a href="/{val}">{val}</a>' inlist=1 orderinlist=2;
   property name="subtitle"              fieldType="column" length=256  orderinform=3   inform=1 editable=1;

@@ -6,7 +6,11 @@
       html, body, .container, .panzoom{ height: 100%; width:100%; }
       html, body{ margin:0; padding:0; }
       .container{ overflow:hidden; }
-      img{width:100%;height:100%;}
+      svg{width:100%;height:100%;}
+      .panzoom{
+        -webkit-backface-visibility: initial !important;
+        -webkit-transform-origin: 50% 50%;
+      }
     </style>
   </head>
   <body>

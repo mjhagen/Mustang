@@ -1,5 +1,5 @@
 component accessors=true {
-  property name="reload" default="false";
+  property name="reload" default=false;
   property name="format" default="svg";
 
   variables.jl = new javaloader.javaloader( loadColdFusionClassPath = true, loadPaths = [
@@ -11,7 +11,7 @@ component accessors=true {
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  remote any function get() {
+  remote string function get() {
     var cachedFile = replace( request.config.outputImage, '.', '-', 'all' ) & "." & getFormat();
 
     if( !fileExists( cachedFile ) || getReload()) {
@@ -31,53 +31,42 @@ component accessors=true {
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private any function outputAsSVG( any graph, string cachedFile="" ) {
-    if( cachedFile == "" ) {
-      cachedFile = replace( request.config.outputImage, '.', '-', 'all' ) & ".svg";
-
-      var dotFile = replace( request.config.outputImage, '.', '-', 'all' ) & ".dot";
-      var FileOutputStream = createObject( "java", "java.io.FileOutputStream" ).init( dotFile );
-
-      var GRAPHtoDOT = jl.create( "com.oy.shared.lm.out.GRAPHtoDOT" );
-          GRAPHtoDOT.transform( graph, FileOutputStream );
-
-      FileOutputStream.close();
-
-      lock scope="server" timeout="10" {
-        var oRuntime = createObject("java", "java.lang.Runtime").getRuntime();
-            oRuntime.exec( "#request.config.lmPath#/bin/graphviz-2.4/bin/dot.exe -Tsvg #dotFile# -o #cachedFile#" );
-
-        removeFile( dotFile );
-      }
+  private string function outputAsSVG( any graph, string cachedFile="" ) {
+    if( cachedFile != "" && fileExists( cachedFile )) {
+      return fileRead( cachedFile, "utf-8" );
     }
 
-    var svgContent = fileRead( cachedFile, "utf-8" );
-        svgContent = mid( svgContent, findNoCase( '<svg', svgContent ), len( svgContent ));
-        svgContent = reReplaceNoCase( svgContent, '<a [^>]+>', '', 'all' );
-        svgContent = replaceNoCase( svgContent, '</a>', '', 'all' );
-        svgContent = trim( reReplace( svgContent, "\s{2,}|\n+|<!--(.*?)-->", " ", "all" ));
-        svgContent = reReplaceNoCase( svgContent, '>\s+<', '><', 'all' );
-        svgContent = reReplaceNoCase( svgContent, '\s?=\s?', '=', 'all' );
+    var svgFile = replace( request.config.outputImage, '.', '-', 'all' ) & ".svg";
+    var dotFile = replace( request.config.outputImage, '.', '-', 'all' ) & ".dot";
+    var FileOutputStream = createObject( "java", "java.io.FileOutputStream" ).init( dotFile );
+    var GRAPHtoDOT = jl.create( "com.oy.shared.lm.out.GRAPHtoDOT" );
 
-    return svgContent;
-  }
+    GRAPHtoDOT.transform( graph, FileOutputStream );
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private void function outputAsImage( required any graph, string format = "gif" ) {
-    var response = getPageContext().getFusionContext().getResponse();
-        response.setContentType( "image/#format#" );
+    FileOutputStream.close();
 
-    var outputStream = response.getOutputStream();
+    lock scope="server" timeout="10" {
+      var Runtime = createObject("java", "java.lang.Runtime").getRuntime();
 
-    var GRAPHtoDOTtoGIF = jl.create( "com.oy.shared.lm.out.GRAPHtoDOTtoGIF" );
-        GRAPHtoDOTtoGIF.transform( graph, "output.dot", request.config.outputImage, "#request.config.lmPath#/bin/graphviz-2.4/bin/dot.exe" );
+      Runtime.exec( "#request.config.lmPath#/bin/graphviz-2.4/bin/dot.exe -Tsvg #dotFile# -o #svgFile#" );
+      Runtime.gc();
 
-    var byteArrayInputStream = createObject( "java", "java.io.ByteArrayInputStream" ).init( fileReadBinary( request.config.outputImage ));
+      removeFile( dotFile );
+    }
 
-    var imageIO = createObject( "java", "javax.imageio.ImageIO" );
-        imageIO.write( imageIO.read( byteArrayInputStream ), format, outputStream );
+    var svgContent = fileRead( svgFile, "utf-8" );
 
-    removeFile( request.config.outputImage );
+    svgContent = mid( svgContent, findNoCase( '<svg', svgContent ), len( svgContent ));
+    svgContent = reReplaceNoCase( svgContent, '<a [^>]+>', '', 'all' );
+    svgContent = replaceNoCase( svgContent, '</a>', '', 'all' );
+    svgContent = trim( reReplace( svgContent, "\s{2,}|\n+|<!--(.*?)-->", " ", "all" ));
+    svgContent = reReplaceNoCase( svgContent, '>\s+<', '><', 'all' );
+    svgContent = reReplaceNoCase( svgContent, '\s?=\s?', '=', 'all' );
+    svgContent = reReplaceNoCase( svgContent, '<title>[^<]+</title>', '', 'all' );
+
+    fileWrite( svgFile, svgContent, "utf-8" );
+
+    return fileRead( svgFile, "utf-8" );;
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

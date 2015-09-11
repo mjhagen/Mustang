@@ -1,1 +1,0 @@
-<cfoutput>#local.mailbody#</cfoutput>

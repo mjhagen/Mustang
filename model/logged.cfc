@@ -1,5 +1,5 @@
 component extends="basecfc.base"
-          persistent="true"
+          persistent=true
           hide=true
           table="logged"
           discriminatorColumn="entityName" {

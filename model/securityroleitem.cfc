@@ -11,8 +11,7 @@ component extends="basecfc.base"
 
   property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid";
 
-  function getName()
-  {
+  function getName() {
     return getSection();
   }
 }

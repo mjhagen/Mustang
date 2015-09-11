@@ -2,8 +2,8 @@
   PUBLIC '-//Hibernate/Hibernate Mapping DTD 3.0//EN'
   'http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd'>
 <hibernate-mapping>
-  <subclass extends="cfc:root.model.text" discriminator-value="content" entity-name="content" name="cfc:root.model.content" lazy="true">
-    <join table="content">
+  <subclass discriminator-value="content" entity-name="content" extends="cfc:root.model.text" name="cfc:root.model.content" lazy="true">
+    <join table="text">
       <key column="id"/>
       <property name="fullyqualifiedaction" type="string"><column length="128" name="fullyqualifiedaction"/></property>
       <property name="subtitle" type="string"><column length="256" name="subtitle"/></property>
