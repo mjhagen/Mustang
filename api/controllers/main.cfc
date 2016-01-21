@@ -1,14 +1,11 @@
-component extends="apibase"
-{
+component extends="apibase"{
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public Any function before()
-  {
+  public any function before(){
     var action = fw.getItem();
 
-    writeLog( file="vgn-api-log", text="#action# by #cgi.remote_addr#" );
+    writeLog( file=request.appName & "-API", text="#action# by #cgi.remote_addr#" );
 
-    if( action eq "info" )
-    {
+    if( action eq "info" ){
       return;
     }
 
@@ -20,28 +17,24 @@ component extends="apibase"
       "destroy" = "delete"
     };
 
-    if( structKeyExists( rc, "id" ))
-    {
+    if( structKeyExists( rc, "id" )){
       variables.where["id"] = rc.id;
     }
 
-    if( !rc.auth.role.can( privilegeMapping[action], variables.entityName ))
-    {
+    if( !rc.auth.role.can( privilegeMapping[action], variables.entityName )){
       return returnAsJSON({ "status" = "not-allowed" }); // STOP!
     }
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // utility debug method, can be removed later
-  public String function info( Struct rc )
-  {
+  public string function info( Struct rc ){
     return returnAsJSON({ "status" = "ok", "data" = getMetaData( createObject( "root.model.#variables.entityName#" ))});
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // GET
-  public String function default( Struct rc )
-  {
+  public string function default( Struct rc ){
     param rc.maxResults = 25;
     param rc.offset = 0;
     param rc.orderby = "";
@@ -55,8 +48,7 @@ component extends="apibase"
     structDelete( url, "maxResults" );
     structDelete( url, "offset" );
 
-    for( var key in url )
-    {
+    for( var key in url ){
       variables.where[key] = url[key];
     }
 
@@ -64,42 +56,34 @@ component extends="apibase"
     var entityMeta = getMetaData( entity );
     var customProps = {};
 
-    for( var key in variables.where )
-    {
-      if( not entity.hasProperty( key ))
-      {
+    for( var key in variables.where ){
+      if( not entity.hasProperty( key )){
         customProps[key] = variables.where[key];
         structDelete( variables.where, key );
       }
     }
 
     // search JSON fields:
-    if( structCount( customProps ))
-    {
+    if( structCount( customProps )){
       var allProps = entity.getInheritedProperties();
-      var jsonProps = structFindValue( { struct = allProps }, "json" );
+      var jsonProps = structFindValue({ struct = allProps }, "json" );
       var jsonFields = [];
 
-      for( var jsonProp in jsonProps )
-      {
+      for( var jsonProp in jsonProps ){
         arrayAppend( jsonFields, jsonProp.owner.name );
       }
 
-      if( arrayLen( jsonFields ))
-      {
+      if( arrayLen( jsonFields )){
         var tableName = variables.entityName;
 
-        if( structKeyExists( entityMeta, "table" ))
-        {
+        if( structKeyExists( entityMeta, "table" )){
           tableName = entityMeta.table;
         }
 
         var SQLText = 'SELECT id FROM "#tableName#" WHERE 0 = 0 ';
 
-        for( var jsonField in jsonFields )
-        {
-          for( var key in customProps )
-          {
+        for( var jsonField in jsonFields ){
+          for( var key in customProps ){
             // TODO: treat numbers as numbers, for now it's text only
             SQLText &= " AND CAST( #jsonField# AS jsonb ) ->> '#key#' = '#customProps[key]#'";
           }
@@ -111,31 +95,22 @@ component extends="apibase"
 
     var HQLText = "FROM #variables.entityName# e WHERE 0 = 0";
 
-    if( structCount( variables.where ))
-    {
-      for( var key in variables.where )
-      {
-        if( isSimpleValue( variables.where[key] ) and variables.where[key] eq "NULL" )
-        {
+    if( structCount( variables.where )){
+      for( var key in variables.where ){
+        if( isSimpleValue( variables.where[key] ) and variables.where[key] eq "NULL" ){
           HQLText &= " AND #key# IS NULL";
           structDelete( variables.where, key );
-        }
-        else
-        {
+        } else {
           HQLText &= " AND #key# = :#key#";
         }
       }
     }
 
-    if( not isNull( jsonParamResult ))
-    {
-      if( jsonParamResult.recordCount )
-      {
+    if( not isNull( jsonParamResult )){
+      if( jsonParamResult.recordCount ){
         HQLText &= " AND e.id IN ( :ids )";
         variables.where["ids"] = listToArray( valueList( jsonParamResult.id ));
-      }
-      else
-      {
+      } else {
         // return 0 results when searching on JSON param, but nothing found:
         HQLText &= " AND 0 = 1";
       }
@@ -144,8 +119,7 @@ component extends="apibase"
     var data = ORMExecuteQuery( HQLText, variables.where, false, rc.parameters );
 
     var result = [];
-    for( var record in data )
-    {
+    for( var record in data ){
       arrayAppend( result, processEntity( record ));
     }
 
@@ -160,12 +134,10 @@ component extends="apibase"
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // GET with ID
-  public String function show( Struct rc )
-  {
+  public string function show( Struct rc ){
     var record = entityLoad( variables.entityName, variables.where, true );
 
-    if( isNull( record ))
-    {
+    if( isNull( record )){
       return returnAsJSON({
         "status" = "not-found"
       });
@@ -179,21 +151,14 @@ component extends="apibase"
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // POST new
-  public String function create( Struct rc )
-  {
-    if( structKeyExists( form, "batch" ))
-    {
-      if( isJSON( form.batch ))
-      {
+  public string function create( Struct rc ){    
+    if( structKeyExists( form, "batch" )){
+      if( isJSON( form.batch )){
         form.batch = deserializeJSON( form.batch );
-      }
-      else
-      {
+      } else {
         throw( "batch should be a JSON formatted array" );
       }
-    }
-    else
-    {
+    } else {
       form.batch = [
         duplicate( form )
       ];
@@ -204,30 +169,27 @@ component extends="apibase"
       "data" = []
     };
 
-    try
-    {
-      var newObjects = [];
+    try{
+      transaction{
+        for( var objProperties in form.batch ){
+          structDelete( objProperties, "fieldnames" );
+          structDelete( objProperties, "batch" );
 
-      for( var objProperties in form.batch )
-      {
-        structDelete( objProperties, "fieldnames" );
-        structDelete( objProperties, "batch" );
+          var newObject = entityNew( variables.entityName );
+          entitySave( newObject );
+          newObject.save( objProperties );
 
-        var newObject = entityNew( variables.entityName );
-        entitySave( newObject );
-        newObject.save( objProperties );
+          arrayAppend( result.data, newObject );
+        }
 
-        arrayAppend( result.data, newObject );
+        transactionCommit();
       }
-    }
-    catch( Any e )
-    {
+    } catch( Any e ){
       result["error"] = e.message;
       result["detail"] = e.detail;
     }
 
-    if( structKeyExists( result, "error" ))
-    {
+    if( structKeyExists( result, "error" )){
       result.status = "error";
     }
 
@@ -236,18 +198,17 @@ component extends="apibase"
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // PUT change
-  public String function update( Struct rc )
-  {
+  public string function update( Struct rc ){
     var payload = toString( GetHttpRequestData().content );
     
-   if( structKeyExists( form, "batch" )){
+    if( structKeyExists( form, "batch" )){
       if( isJSON( form.batch )){
         form.batch = deserializeJSON( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
     } else if( isJson( payload ) ){
-      form.batch = [ deserializeJSON( payload) ];
+      form.batch = [ deserializeJSON( payload ) ];
     } else{
       form.batch= [];
       for( keyVal in listToArray( getHttpRequestData().content, "&" )){
@@ -256,42 +217,40 @@ component extends="apibase"
         form.batch[1][key] = val;
       }
     }
-
+    
     var result = {
       "status" = "ok",
       "data" = []
     };
 
-    try
-    {
-      for( var objProperties in form.batch )
-      {
-        structDelete( objProperties, "fieldnames" );
-        structDelete( objProperties, "batch" );
+    try{
+      transaction{
+        for( var objProperties in form.batch ){
+          structDelete( objProperties, "fieldnames" );
+          structDelete( objProperties, "batch" );
 
-        var updateObject = entityLoad( variables.entityName, variables.where, true );
+          var updateObject = entityLoad( variables.entityName, variables.where, true );
 
-        if( isNull( updateObject ))
-        {
-          return returnAsJSON({
-            "status" = "not-found",
-            "where" = variables.where
-          });
+          if( isNull( updateObject )){
+            return returnAsJSON({
+              "status" = "not-found",
+              "where" = variables.where
+            });
+          }
+          
+          objProperties["#variables.entityName#ID"] = updateObject.getID();
+          updateObject.save( objProperties );
+          arrayAppend( result.data, updateObject );
         }
 
-        objProperties["#variables.entityName#ID"] = updateObject.getID();
-        updateObject.save( objProperties );
-        arrayAppend( result.data, updateObject );
+        transactionCommit();
       }
-    }
-    catch( Any e )
-    {
+    } catch( Any e ){
       result["error"] = e.message;
       result["detail"] = e.detail;
     }
 
-    if( structKeyExists( result, "error" ))
-    {
+    if( structKeyExists( result, "error" )){
       result.status = "error";
     }
 
@@ -305,21 +264,23 @@ component extends="apibase"
   * @return HTTP 204 OK, or
   * @return HTTP 404 Not found
   */
-  public String function destroy( Struct rc )
-  {
-    var data = entityLoad( variables.entityName, variables.where, true );
+  public string function destroy( Struct rc ){
+    transaction{
+      var data = entityLoad( variables.entityName, variables.where, true );
 
-    if( isNull( data ))
-    {
-      return returnAsJSON({
-        "status" = "not-found"
+      if( isNull( data )){
+        return returnAsJSON({
+          "status" = "not-found"
+        });
+      }
+
+      data.save({
+        "#variables.entityName#ID" = data.getID(),
+        "deleted" = true
       });
-    }
 
-    data.save({
-      "#variables.entityName#ID" = data.getID(),
-      "deleted" = true
-    });
+      transactionCommit();
+    }
 
     return returnAsJSON({
       "status" = "no-content"
@@ -327,76 +288,55 @@ component extends="apibase"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private Struct function processEntity( entity )
-  {
+  private struct function processEntity( entity ){
     var props = entity.getInheritedProperties();
     var result = {};
 
-    for( var key in props )
-    {
+    for( var key in props ){
       var prop = props[key];
 
-      if(
-          structKeyExists( prop, "inapi" ) and
+      if( structKeyExists( prop, "inapi" ) and
           isBoolean( prop.inapi ) and
-          not prop.inapi
-        )
-      {
+          not prop.inapi ){
         continue;
       }
 
       var propVal = evaluate( "entity.get#prop.name#()" );
 
-      if( isNull( propVal ))
-      {
+      if( isNull( propVal )){
         result[lCase( prop.name )] = "";
         continue;
       }
 
-      if( isArray( propVal ))
-      {
+      if( isArray( propVal )){
         var propValArray = [];
-        for( var item in propVal )
-        {
-          if( isObject( item ))
-          {
+        for( var item in propVal ){
+          if( isObject( item )){
             arrayAppend( propValArray, getBasics( item ));
-          }
-          else if( isSimpleValue( item ))
-          {
-            if( isJSON( item ))
-            {
+          } else if( isSimpleValue( item )){
+            if( isJSON( item )){
               arrayAppend( propValArray, deserializeJSON( item ));
-            }
-            else
-            {
+            } else {
               arrayAppend( propValArray, item );
             }
           }
        }
 
         result[lCase( prop.name )] = propValArray;
-      }
-      else if( isObject( propVal ))
-      {
+      } else if( isObject( propVal )){
         result[lCase( prop.name )] = getBasics( propVal );
-      }
-      else
-      {
+      } else {
         result[lCase( prop.name )] = propVal;
       }
     }
 
     var jsonProps = structFindValue( props, "json" );
 
-    for( var jsonProp in jsonProps )
-    {
-      if( jsonProp.path contains '.datatype' )
-      {
+    for( var jsonProp in jsonProps ){
+      if( jsonProp.path contains '.datatype' ){
         var jsonField = jsonProp.owner.name;
 
-        if( structKeyExists( result, jsonField ) and isJSON( result[jsonField] ))
-        {
+        if( structKeyExists( result, jsonField ) and isJSON( result[jsonField] )){
           structAppend( result, deserializeJSON( result[jsonField] ));
           structDelete( result, jsonField );
         }
@@ -407,17 +347,14 @@ component extends="apibase"
   }
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private Struct function getBasics( entity )
-  {
+  private struct function getBasics( entity ){
     var itemProps = entity.getInheritedProperties();
     var itemBasics = {};
 
-    for( var key in itemProps )
-    {
+    for( var key in itemProps ){
       var itemProp = itemProps[key];
 
-      if( structKeyExists( itemProp, "fieldType" ) and not listFind( "column,id", itemProp.fieldType ))
-      {
+      if( structKeyExists( itemProp, "fieldType" ) and not listFind( "column,id", itemProp.fieldType )){
         continue;
       }
 
@@ -426,14 +363,11 @@ component extends="apibase"
 
     var jsonProps = structFindValue( itemProps, "json" );
 
-    for( var jsonProp in jsonProps )
-    {
-      if( jsonProp.path contains '.datatype' )
-      {
+    for( var jsonProp in jsonProps ){
+      if( jsonProp.path contains '.datatype' ){
         var jsonField = jsonProp.owner.name;
 
-        if( structKeyExists( itemBasics, jsonField ) and isJSON( itemBasics[jsonField] ))
-        {
+        if( structKeyExists( itemBasics, jsonField ) and isJSON( itemBasics[jsonField] )){
           structAppend( itemBasics, deserializeJSON( itemBasics[jsonField] ));
           structDelete( itemBasics, jsonField );
         }
