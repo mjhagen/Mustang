@@ -211,7 +211,7 @@ component extends="apibase"{
       form.batch = [ deserializeJSON( payload ) ];
     } else{
       form.batch= [];
-      for( keyVal in listToArray( getHttpRequestData().content, "&" )){
+      for( keyVal in listToArray( payload, "&" )){
         var key = urlDecode( listFirst( keyVal, "=" ));
         var val = urlDecode( listRest( keyVal, "=" ));
         form.batch[1][key] = val;
