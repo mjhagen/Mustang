@@ -238,22 +238,23 @@ component extends="apibase"
   // PUT change
   public String function update( Struct rc )
   {
-    if( structKeyExists( form, "batch" ))
-    {
-      if( isJSON( form.batch ))
-      {
+    var payload = toString( GetHttpRequestData().content );
+    
+   if( structKeyExists( form, "batch" )){
+      if( isJSON( form.batch )){
         form.batch = deserializeJSON( form.batch );
-      }
-      else
-      {
+      } else {
         throw( "batch should be a JSON formatted array" );
       }
-    }
-    else
-    {
-      form.batch = [
-        duplicate( form )
-      ];
+    } else if( isJson( payload ) ){
+      form.batch = [ deserializeJSON( payload) ];
+    } else{
+      form.batch= [];
+      for( keyVal in listToArray( getHttpRequestData().content, "&" )){
+        var key = urlDecode( listFirst( keyVal, "=" ));
+        var val = urlDecode( listRest( keyVal, "=" ));
+        form.batch[1][key] = val;
+      }
     }
 
     var result = {
@@ -276,16 +277,6 @@ component extends="apibase"
             "status" = "not-found",
             "where" = variables.where
           });
-        }
-
-        var key = 0;
-        var val = 0;
-
-        for( keyVal in listToArray( getHttpRequestData().content, "&" ))
-        {
-          var key = urlDecode( listFirst( keyVal, "=" ));
-          var val = urlDecode( listRest( keyVal, "=" ));
-          objProperties[key] = val;
         }
 
         objProperties["#variables.entityName#ID"] = updateObject.getID();
