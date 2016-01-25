@@ -152,16 +152,23 @@ component extends="apibase"{
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // POST new
   public string function create( Struct rc ){    
+     var payload = toString( GetHttpRequestData().content );
+    
     if( structKeyExists( form, "batch" )){
       if( isJSON( form.batch )){
         form.batch = deserializeJSON( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
-    } else {
-      form.batch = [
-        duplicate( form )
-      ];
+    } else if( isJson( payload ) ){
+      form.batch = [ deserializeJSON( payload ) ];
+    } else{
+      form.batch= [];
+      for( keyVal in listToArray( payload, "&" )){
+        var key = urlDecode( listFirst( keyVal, "=" ));
+        var val = urlDecode( listRest( keyVal, "=" ));
+        form.batch[1][key] = val;
+      }
     }
 
     var result = {
