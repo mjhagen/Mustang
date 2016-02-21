@@ -1,136 +1,157 @@
-<cfcomponent>
-  <cffunction name="init" output="false">
-    <cfargument name="fw" type="component" required="true" />
-    <cfset variables.fw = fw />
-    <cfreturn this />
-  </cffunction>
+component accessors=true {
+  property framework;
+  property queryService;
 
-  <cffunction name="error">
-    <cfargument name="rc" />
+  public void function error( required struct rc ) {
+    var pageContext = getPageContext();
+    var response = pageContext.getResponse();
+    var errorMessage = "";
 
-    <cfif structKeyExists( request, "exception" )>
-    <cfif rc.debug>
-      <cfcontent reset="true" />
-      <cfdump var="#cgi#" expand="false" />
-      <cfdump var="#request.exception#" />
-      <cfabort />
-    </cfif>
+    savecontent variable="errorMessage" {
+      writeDump( cgi );
 
-    <cfheader statuscode="500" statustext="Internal Server Error" />
-    <cfset rc.dontredirect = true />
+      if( structKeyExists( request, "exception" )) {
+        writeDump( request.exception );
+      }
+    };
 
-    <cfset var mailSubject = "Error #cgi.server_name#" />
+    if( rc.debug ) {
+      if( listFindNoCase( "lucee,railo", server.ColdFusion.ProductName )) {
+        pageContext.clear();
+      } else {
+        pageContext.getcfoutput().clearall();
+      }
 
-    <cfif isDefined( "request.exception.cause.message" )>
-      <cfset mailSubject &= " - " & request.exception.cause.message />
-    </cfif>
+      writeOutput( errorMessage );
+      abort;
+    }
 
-    <cfmail from="#rc.config.debugEmail#" to="#rc.config.debugEmail#" subject="#mailSubject#" type="html">
-      <cfdump var="#cgi#" />
-      <cfdump var="#request.exception#" />
-    </cfmail>
-    </cfif>
-  </cffunction>
+    response.setStatus( 500, "Internal Server Error" );
+    rc.dontredirect = true;
 
-  <cffunction name="loc">
-    <cfset var q = directoryList( request.root, true, 'query' ) />
-    <cfset var ext = "" />
-    <cfset var cont = false />
-    <cfset var files = {} />
-    <cfset var filecontents = "" />
-    <cfset var countFile = true />
-    <cfset var sep = server.os.name contains 'windows' ? '\' : '/' />
-    <cfset var filter = {
-      hidedirs = [
-        '.svn',
-        '.DS_Store',
-        '__MACOSX',
-        'WEB-INF',
-        'CFIDE',
-        'plugins',
-        'docs',
-        'stats',
-        'diagram',
-        'org'
-      ],
-      exts = "js,txt,cfg,cfm,cfc,css,sql,ini,json,config,hbmxml",
-      filecontains = ""
-    } />
+    var mailSubject = "Error #cgi.server_name#";
 
-    <cfquery name="rc.lastmod" dbtype="query" maxRows="10">
-      SELECT    *
-      FROM      q
-      WHERE     [type] = 'File'
+    if( isDefined( "request.exception.cause.message" )) {
+      mailSubject &= " - " & request.exception.cause.message;
+    }
 
-      <cfloop array="#filter.hidedirs#" index="local.dir">
-        AND NOT directory LIKE '%#sep##local.dir#'
-        AND NOT directory LIKE '%#sep##local.dir##sep#'
-        AND NOT directory LIKE '%#sep##local.dir##sep#%'
-      </cfloop>
+    mailService = new mail(
+      to      = rc.config.debugEmail,
+      from    = rc.config.debugEmail,
+      subject = mailSubject,
+      body    = errorMessage
+    ).send();
+  }
 
-      ORDER BY  datelastmodified DESC
-    </cfquery>
+  public void function loc( required struct rc ) {
+    var files = {};
+    var sep = server.os.name contains 'windows' ? '\' : '/';
+    var filter = {
+          hidedirs = [
+            '.svn',
+            '.DS_Store',
+            '__MACOSX',
+            'WEB-INF',
+            'CFIDE',
+            'plugins',
+            'docs',
+            'stats',
+            'diagram',
+            'org'
+          ],
+          exts = "js,txt,cfg,cfm,cfc,css,sql,ini,json,config,hbmxml",
+          filecontains = ""
+        };
 
-    <cfloop query="q">
-      <cfset dirPath = directory />
+    var q = directoryList( request.root, true, 'query' );
+    var sql = " SELECT * FROM q WHERE [type] = 'File' ";
 
-      <cfif type eq "dir" or
-            left( name, 1 ) eq '.' or
-            not listFind( filter.exts, listLast( name, '.' ))>
-        <cfcontinue />
-      </cfif>
+    for( var dir in filter.hidedirs ) {
+      sql &= " AND NOT directory LIKE '%#sep##dir#' ";
+      sql &= " AND NOT directory LIKE '%#sep##dir##sep#' ";
+      sql &= " AND NOT directory LIKE '%#sep##dir##sep#%' ";
+    }
 
-      <cfset cont = false />
-      <cfloop array="#filter.hidedirs#" index="local.dir">
-        <cfif dirPath eq local.dir or
-              dirPath contains "#sep##local.dir##sep#" or
-              name eq local.dir>
-          <cfset cont = true />
-          <cfbreak />
-        </cfif>
-      </cfloop>
+    sql &= " ORDER BY  datelastmodified DESC ";
 
-      <cfif cont>
-        <cfcontinue />
-      </cfif>
+    var lastModQuery = new query(
+          dbtype = "query",
+          sql = sql,
+          q = q,
+          maxRows = 10
+        );
 
-      <cfif type eq "file">
-        <cfset ext = listLast( name, '.' ) />
-        <cfif not structKeyExists( files, ext )>
-          <cfset files[ext] = 0 />
-        </cfif>
-        <cfset filecontents = fileRead( dirPath & sep & name ) />
-        <cfif len( trim( filter.filecontains ))>
-          <cfset countFile = false />
-          <cfloop list="#filter.filecontains#" index="word">
-            <cfif findNoCase( word, filecontents )>
-              <cfset countFile = true />
-              <cfbreak />
-            </cfif>
-          </cfloop>
-        </cfif>
-        <cfif countFile>
-          <cfset files[ext] += listLen( filecontents, chr( 10 )) />
-        </cfif>
-      </cfif>
-    </cfloop>
+    rc.lastmod = lastModQuery.execute().getResult();
 
-    <cfset rc.files = files />
-  </cffunction>
+    var allFiles = queryService.toArray( q );
 
-  <cffunction name="docs">
-    <cfset rc.docsPath = "#rc.config.fileUploads#/docs" />
+    for( var row in allFiles ) {
+      if( row.type == "dir" ||
+          left( row.name, 1 ) == '.' ||
+          !listFind( filter.exts, listLast( row.name, '.' ))) {
+        continue;
+      }
 
-    <cfset var coldDocService = new colddoc.ColdDoc() />
-    <cfset var strategy = new colddoc.strategy.api.HTMLAPIStrategy( rc.docsPath, request.appName & " " & request.version ) />
+      var cont = false;
 
-    <cfset coldDocService.setStrategy( strategy ) />
-    <cfset coldDocService.generate( expandPath( "../" ), "root" ) />
-  </cffunction>
+      for( var dir in filter.hidedirs ) {
+        if( row.directory == dir || row.directory contains "#sep##dir##sep#" || row.name == dir ) {
+          cont = true;
+          break;
+        }
+      }
 
-  <cffunction name="diagram">
-    <cfargument name="rc" />
+      if( cont ) {
+        continue;
+      }
 
-    <cflocation url="#rc.config.webroot#/diagram" addtoken="false" />
-  </cffunction>
-</cfcomponent>
+      if( row.type == "file" ) {
+        var ext = listLast( row.name, '.' );
+
+        if( !structKeyExists( files, ext )) {
+          files[ext] = 0;
+        }
+
+        var filecontents = fileRead( row.directory & sep & row.name );
+        var countFile = true;
+
+        if( len( trim( filter.filecontains ))) {
+          countFile = false;
+          for( var word in listToArray( filter.filecontains )) {
+            if( findNoCase( word, filecontents )) {
+              countFile = true;
+              break;
+            }
+          }
+        }
+
+        if( countFile ) {
+          files[ext] += listLen( filecontents, chr( 10 ));
+        }
+      }
+    }
+
+    rc.files = files;
+  }
+
+  public void function docs( required struct rc ) {
+    rc.docsPath = "#request.fileUploads#/docs";
+
+    var coldDocService = new colddoc.ColdDoc();
+    var strategy = new colddoc.strategy.api.HTMLAPIStrategy( rc.docsPath, request.appName & " " & request.version );
+
+    coldDocService.setStrategy( strategy );
+    coldDocService.generate( expandPath( "../" ), "root" );
+  }
+
+  public void function diagram( required struct rc ) {
+    location( "#rc.config.webroot#/diagram", false );
+  }
+
+  public void function testService( required struct rc ) {
+    param string rc.service="";
+
+    writeDump( createObject( rc.service ));
+    abort;
+  }
+}

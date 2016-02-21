@@ -1,26 +1,23 @@
 component extends="basecfc.base"
           persistent=true
-          hide=true {
-  property fieldType="column"  inform="true" orderinform="1" editable="true" inlist="true" name="name" type="string" ORMType="string" length="32";
-  property fieldType="column"  inform="true" orderinform="2" editable="true" inlist="true" name="loginscript" type="string" ORMType="string" length="128";
-  property fieldType="column"  inform="true" orderinform="3" editable="true" name="menulist" type="string" ORMType="string" length="256";
+          schema="mustang" {
+  property name="menulist" length=256 inform=true orderinform=2 editable=true;
+  property name="loginscript" length=128 inform=true orderinform=3 editable=true inlist=true;
 
-  property fieldtype="one-to-many" name="contacts" singularName="contact" cfc="root.model.contact" FKColumn="securityroleid" cascade="delete-orphan" lazy=1 where="deleted!='true'";
-  property fieldtype="one-to-many" name="securityroleitems" singularName="securityroleitem" cfc="root.model.securityroleitem" FKColumn="securityroleid" lazy=1 orderby="section" where="deleted!='true'" inform=1 editable=1 inlineedit=1;
+  property name="contacts" fieldtype="one-to-many" singularName="contact" cfc="root.model.contact" FKColumn="securityroleid" cascade="delete-orphan";
+  property name="permissions" fieldtype="one-to-many" singularName="permission" cfc="root.model.permission" FKColumn="securityroleid" orderby="section" inform=true orderinform=4 editable=true inlineedit=true;
 
-  property persistent=0 name="canAccessAdmin" inlist=1;
+  property persistent=false name="name" inform=true orderinform=1 editable=true inlist=true;
+  property persistent=false name="canAccessAdmin" inlist=true;
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function getCanAccessAdmin(){
     return isAdmin();
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function isAdmin(){
     return getName() == "Administrator";
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function can( string action="", string section="" ){
     if( isAdmin()){
       return true;
@@ -37,7 +34,6 @@ component extends="basecfc.base"
     return session.can["#action#-#section#"];
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public boolean function checkRight( string action="", string section="" ){
     var params = {
       "securityrole" = this,
@@ -48,8 +44,8 @@ component extends="basecfc.base"
       params[local.action] = true;
     }
 
-    var findSecurityRoleItem = entityLoad( "securityroleitem", params );
+    var findPermission = entityLoad( "permission", params );
 
-    return ( arrayLen( findSecurityRoleItem ) gt 0 );
+    return ( arrayLen( findPermission ) gt 0 );
   }
 }

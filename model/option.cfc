@@ -1,9 +1,13 @@
-component persistent=true
-          extends="basecfc.base"
+component extends="basecfc.base"
+          persistent=true
           table="option"
-          discriminatorcolumn="type"
-{
-  property name="importkey" fieldType="column";
-  property persistent=0 name="name" inlist=1;
-  property persistent=0 name="type" inlist=1;
+          schema="mustang"
+          discriminatorColumn="type" {
+  property persistent=false name="name" inlist=true;
+  property persistent=false name="type" inlist=true;
+  property persistent=false name="sourcecolumn" inlist=true;
+
+  function getType() {
+    return variables.instance.meta.discriminatorValue;
+  }
 }

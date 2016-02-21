@@ -14,20 +14,11 @@
             <p>#rc.content.getBody()#</p>
           </cfif>
 
-          <cfif structKeyExists( rc, "alert" ) and isStruct( rc.alert ) and
-                structKeyExists( rc.alert, 'class' ) and
-                structKeyExists( rc.alert, 'text' )>
-            <div class="row">
-              <div class="col-lg-12">
-                <div class="alert alert-dismissable alert-#rc.alert.class#">
-                  <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                  #i18n.translate( label = rc.alert.text, stringVariables = rc.alert.stringVariables )#
-                </div>
-              </div>
-            </div>
-          </cfif>
+          #view( 'elements/alert' )#
 
-          <form class="form-horizontal" action="#buildURL( '.dologin' )#" method="post">
+          <form class="form-horizontal" action="#buildURL( ':security.dologin' )#" method="post">
+            <input type="hidden" name="origin" value="#getSubsystem()#">
+
             <div class="form-group">
               <label for="username" class="col-lg-4 control-label">#i18n.translate('username')#</label>
               <div class="col-lg-8">

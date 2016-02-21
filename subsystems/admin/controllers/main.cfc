@@ -1,1 +1,1 @@
-component extends="crud"{}
+component extends=crud {}

@@ -21,7 +21,7 @@ component extends="apibase"{
       variables.where["id"] = rc.id;
     }
 
-    if( !rc.auth.role.can( privilegeMapping[action], variables.entityName )){
+    if( !request.auth.role.can( privilegeMapping[action], variables.entityName )){
       return returnAsJSON({ "status" = "not-allowed" }); // STOP!
     }
   }

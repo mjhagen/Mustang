@@ -24,11 +24,11 @@
       </cfloop>
     </ul>
 
-    <cfif rc.auth.isLoggedIn and structKeyExists( rc.auth, "userID" )>
+    <cfif request.auth.isLoggedIn and structKeyExists( request.auth, "userID" )>
       <ul class="nav navbar-top-links navbar-right">
         <li><img id="loading" src="#request.webroot#/inc/img/loading-topnav.gif" /></li>
 
-        <cfset local.contact = entityLoadByPK( "contact", rc.auth.userID ) />
+        <cfset local.contact = entityLoadByPK( "contact", request.auth.userID ) />
         <cfset local.role = local.contact.getSecurityRole() />
         <cfif local.role.getCanAccessAdmin()>
           <li#( getSubsystem() eq 'admin' )?' class="active"':''#><a href="#buildURL('admin:')#"><i class="fa fa-home"></i> #i18n.translate('admin:main.default')#</a></li>
@@ -48,7 +48,7 @@
         <li class="dropdown">
           <a href="##" class="dropdown-toggle" data-toggle="dropdown">
             <i class="fa fa-user"></i>
-            #rc.auth.user.getFirstname()#
+            #request.auth.user.getFirstname()#
             <i class="fa fa-caret-down"></i>
           </a>
           <ul class="dropdown-menu">

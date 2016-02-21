@@ -6,7 +6,6 @@
       <h4>DEBUG INFO</h4>
       <small>
         Powered by FW/1 version #variables.framework.version#.<br />
-        <a href="#buildURL( 'admin:' )#">Admin</a>
         | <a href="#buildURL( ':app.docs?x=' & randRange( 1000, 9999 ))#">Docs</a>
         | <a href="#buildURL( ':app.loc' )#">LoC</a>
         | <a href="#buildURL( ':app.diagram' )#">Diagram</a>

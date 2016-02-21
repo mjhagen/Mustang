@@ -1,60 +1,68 @@
-component extends="root.model.logged"
+component extends="basecfc.base"
           persistent=true
-          discriminatorValue="logentry"
-          joinColumn="id"
-          defaultSort="createDate DESC"
+          table="log"
+          schema="mustang"
+          defaultSort="dd DESC"
           classColumn="logaction" {
-  property name="entity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inform=1 orderinform=1 inlist=1;
-  property name="logaction" fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid" inform=1 orderinform=2 inlist=1;
-  property persistent=0 name="createContact" inform=1 orderinform=3;
-  property persistent=0 name="createDate" inform=1 orderinform=4 inlist=1;
-  property name="savedState" fieldType="column" ORMType="string" length=4000 dataType="json" inform=1 orderinform=5;
-  property name="note" fieldType="column" ORMType="string" length=1024 inform=1 orderinform=6 editable=1 required=1 inlist=1;
-  property name="attachment" fieldType="column" ORMType="string" length=128 inform=1 orderinform=7 editable=1 formfield="file";
+  property name="relatedEntity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inform=true orderinform=1 inlist=1;
+  property name="logaction" fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid" inform=true orderinform=2 inlist=1;
+  property name="savedState" length=4000 dataType="json" inform=true orderinform=5;
+  property name="note" length=1024 inform=true orderinform=6 editable=true required=1 inlist=1;
+  property name="attachment" length=128 inform=true orderinform=7 editable=true formfield="file";
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public string function getName(){
-    var entity = getEntity();
+  property name="by" fieldType="many-to-one" FKColumn="contactid" cfc="root.model.contact";
+  property name="dd" ORMType="timestamp" inlist=true;
+  property name="ip" length=15;
 
-    if( !isNull( entity )){
+  public string function getName() {
+    return "";
+    var entity = getRelatedEntity();
+
+    if( !isNull( entity )) {
       return entity.getName() & " log";
     }
 
-    return "no entity found";
+    throw( "no entity found" );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function enterIntoLog( string action="init", struct newState={}){
-    transaction {
-      var entityToLog = getEntity();
-      var logaction = 0;
-
-      if( len( trim( action ))){
-        logaction = entityLoad( "logaction", { name = action }, true );
-      }
-
-      if( isNull( logaction )){
-        logaction = entityLoad( "logaction", { name = "init" }, true );
-      }
-
-      if( structCount( newState ) eq 0 ){
-        newState = {
-          "init" = true,
-          "name" = entityToLog.getName()
-        };
-      }
-
-      save({
-        savedState = serializeJSON( newState ),
-        logaction = logaction.getID(),
-        entity = entityToLog.getID()
-      });
-
-      entitySave( this );
-
-      transactionCommit();
+  public any function enterIntoLog( string action="init", struct newState={}, component entityToLog=getRelatedEntity()) {
+    if( isNull( entityToLog )) {
+      return this;
     }
 
-    return this;
+    var formData = {
+      "dd" = now(),
+      "ip" = cgi.remote_addr,
+      "relatedEntity" = entityToLog
+    };
+
+    if( isDefined( "request.context.auth.userID" )) {
+      var contact = entityLoadByPK( "contact", request.context.auth.userID );
+
+      if( !isNull( contact )) {
+        formData["by"] = contact;
+      }
+    }
+
+    if( len( trim( action ))) {
+      var logaction = entityLoad( "logaction", { name = action }, true );
+
+      if( isNull( logaction )) {
+        var logaction = entityLoad( "logaction", { name = "init" }, true );
+      }
+
+      formData["logaction"] = logaction;
+    }
+
+    if( structCount( newState ) == 0 ) {
+      newState = {
+        "init" = true,
+        "name" = entityToLog.getName()
+      };
+    }
+
+    formData["savedState"] = deORM( newState );
+
+    return save( formData );
   }
 }

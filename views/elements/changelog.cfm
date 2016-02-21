@@ -5,27 +5,21 @@
 <cfoutput>
   <ul class="list-group">
     <cfloop array="#local.activity#" index="local.logEntry">
-      <cfset local.updateContact = local.logEntry.getUpdateContact() />
-      <cfif not isDefined( "local.updateContact" )>
-        <cfset local.updateContact = local.logEntry.getCreateContact() />
+      <cfset local.by = local.logEntry.getby() />
+      <cfif not isDefined( "local.by" )>
+        <cfset local.by = entityNew( "contact" ) />
       </cfif>
-      <cfif not isDefined( "local.updateContact" )>
-        <cfset local.updateContact = entityNew( "contact" ) />
-      </cfif>
-      <cfset local.updateDate = local.logEntry.getUpdateDate() />
-      <cfif not isDefined( "local.updateDate" )>
-        <cfset local.updateDate = local.logEntry.getCreateDate() />
-      </cfif>
+      <cfset local.dd = local.logEntry.getdd() />
       <cfset local.logaction = local.logEntry.getLogaction() />
       <cfif not isDefined( "local.logaction" )>
         <cfset local.logaction = entityLoad( "logaction", { name = "changed" }, true ) />
       </cfif>
-      <cfset local.cssClass = local.logaction.getClass() />
+      <cfset local.cssClass = local.logaction.getCSSClass() />
       <cfif not isDefined( "local.cssClass" )>
         <cfset local.cssClass = "default" />
       </cfif>
 
-      <cfset local.loggedEntity = local.logEntry.getEntity() />
+      <cfset local.loggedEntity = local.logEntry.getRelatedEntity() />
       <cfif isDefined( "local.loggedEntity" )>
         <cfset local.loggedEntityName = listLast( getMetaData( local.loggedEntity ).name, '.' ) />
         <cfset local.loggedEntityID = local.loggedEntity.getID() />
@@ -42,14 +36,14 @@
         <a class="btn btn-xs btn-primary pull-right" style="margin-left:5px;" href="#buildURL( 'logentry.view?logentryID=#local.logEntry.getID()#' )#">#i18n.translate( 'view-logentry' )#</a>
 
         <!--- log entry output: --->
-        <cfif not isNull( local.updateDate )>
-          <span class="text-muted">#i18n.translate( 'on' )#</span> #lsDateFormat( local.updateDate, i18n.translate( 'defaults-dateformat-small' ))#
-          <span class="text-muted">#i18n.translate( 'at' )#</span> #lsTimeFormat( local.updateDate, 'HH:mm:ss' )#
+        <cfif not isNull( local.dd )>
+          <span class="text-muted">#i18n.translate( 'on' )#</span> #lsDateFormat( local.dd, i18n.translate( 'defaults-dateformat-small' ))#
+          <span class="text-muted">#i18n.translate( 'at' )#</span> #lsTimeFormat( local.dd, 'HH:mm:ss' )#
         </cfif>
-        #local.updateContact.getName()#
+        #local.by.getName()#
         <strong>#i18n.translate( local.logaction.getName())#</strong>
         #i18n.translate( local.loggedEntityName )#
-        <cfset local.loggedEntity = local.logEntry.getEntity() />
+        <cfset local.loggedEntity = local.logEntry.getRelatedEntity() />
         <cfif isDefined( "local.loggedEntity" )>
           #local.loggedEntity.getName()#
         </cfif>

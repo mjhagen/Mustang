@@ -1,42 +1,45 @@
 component accessors=true {
+  property framework;
   property securityService;
   property contactService;
   property contentService;
   property mailService;
-
-  public any function init( required struct fw ) {
-    variables.fw = fw;
-    variables.frameworkConfig = fw.getConfig();
-
-    return this;
-  }
+  property optionService;
+  property utilityService;
+  property dataService;
 
   public void function login( required struct rc ) {
-    param rc.username = "";
-    param rc.password = "";
+    framework.setLayout( "security" );
+
+    param rc.username="";
+    param rc.password="";
   }
 
   public void function doLogin( required struct rc ) {
-    param rc.username = "";
-    param rc.password = "";
-    param rc.authhash = "";
-    param rc.dontRedirect = false;
+    param rc.username="";
+    param rc.password="";
+    param rc.authhash="";
+    param rc.dontRedirect=false;
 
-    lock name = "login_#rc.username#"
-         type = "exclusive"
-         timeout = "5" {
+    lock name="login_#rc.username#" type="exclusive" timeout=5 {
+      var updateUserWith = {
+        lastLoginDate = now()
+      };
+
       // Check credentials:
       if( structKeyExists( rc, "authhash" ) && len( trim( rc.authhash ))) {
-        var contactID = decrypt( rc.util.base64urlDecode( rc.authhash ), request.context.config.encryptKey );
+        writeLog( text="trying authhash", type="information", file=request.appName );
+
+        var contactID=decrypt( rc.util.base64urlDecode( rc.authhash ), rc.config.encryptKey );
         var user = contactService.get( contactID );
 
         if( isNull( user )) {
           rc.alert = {
             "class" = "danger",
-            "text"  = "user-not-found"
+            "text" = "user-not-found"
           };
           writeLog( text = "authhash failed", type = "warning", file = request.appName );
-          doLogout( rc = rc );
+          doLogout( rc );
         }
 
         rc.dontRedirect = true;
@@ -48,53 +51,70 @@ component accessors=true {
         if( isNull( user )) {
           rc.alert = {
             "class" = "danger",
-            "text"  = "user-not-found"
+            "text" = "user-not-found"
           };
-          writeLog( text = "login failed: wrong username", type = "warning", file = request.appName );
-          doLogout( rc = rc );
+          writeLog( text = "login failed: wrong username (#rc.username#)", type = "warning", file = request.appName );
+          doLogout( rc );
         }
 
         // CHECK PASSWORD:
-        if( !securityService.comparePassword( password = rc.password, storedPW = user.getPassword())) {
+        var decryptSpeed = getTickCount();
+        var passwordIsCorrect = securityService.comparePassword( password = rc.password, storedPW = user.getPassword());
+        decryptSpeed = getTickCount() - decryptSpeed;
+
+        if( !passwordIsCorrect ) {
           rc.alert = {
             "class" = "danger",
-            "text"  = "password-incorrect"
+            "text" = "password-incorrect"
           };
-          writeLog( text = "user #user.getUsername()# login failed: wrong password ", type = "warning", file = request.appName );
-          doLogout( rc = rc );
+          writeLog( text = "user #user.getUsername()# login failed: wrong password", type = "warning", file = request.appName );
+          doLogout( rc );
+        }
+
+        if( passwordIsCorrect && ( decryptSpeed < 250 || decryptSpeed > 1000 )) {
+          // re-encrypt if decryption is too slow, or too fast:
+          updateUserWith.password = securityService.hashPassword( rc.password );
         }
       }
 
       // Set auth struct:
-      user.save({ LastLoginDate = now()});
       securityService.refreshSession( user );
 
-      writeLog( text = "user #user.getUsername()# logged in.", type = "information", file = request.appName );
+      updateUserWith.contactID=user.getID();
 
-      // Log login action:
       if( rc.config.log ) {
-        transaction {
-          var logentry = entityNew( "logentry" );
-          entitySave( logentry );
-          logentry
-            .save({ note = "Logged in", entity = user.getID()})
-            .enterIntoLog( "security" );
-          transactionCommit();
-        }
+        structAppend( updateUserWith, {
+          add_contactLogEntry={
+            relatedEntity=user,
+            by=user,
+            dd=now(),
+            ip=cgi.remote_addr,
+            logaction=optionService.getOptionByName( "logaction", "security" ),
+            note="Logged in"
+          }
+        });
       }
+
+      var originalLogSetting=rc.config.log;
+      request.context.config.log=false;
+
+      user.save( updateUserWith );
+
+      request.context.config.log=originalLogSetting;
+
+      writeLog( text="user #user.getUsername()# logged in.", type="information", file=request.appName );
     }
 
     if( !rc.dontRedirect ) {
-      var loginscript = session.auth.role.getLoginScript();
+      var loginscript=session.auth.role.getLoginScript();
 
       if( structKeyExists( rc , 'returnpage') ) {
-      	loginscript = rc.returnpage;
-      }
-      else if( isNull( loginscript ) || !len( trim( loginscript ))) {
-        loginscript = "admin:";
+      	loginscript=rc.returnpage;
+      } else if( isNull( loginscript ) || !len( trim( loginscript ))) {
+        loginscript=":";
       }
 
-      fw.redirect( loginscript );
+      framework.redirect( loginscript );
     }
   }
 
@@ -102,61 +122,69 @@ component accessors=true {
     // reset session
     securityService.createSession();
 
-    if( isDefined( "rc.auth.isLoggedIn" ) && rc.auth.isLoggedIn ) {
-      rc.alert = {
-        "class" = "success",
-        "text"  = "logout-success"
+    if( isDefined( "rc.auth.isLoggedIn" ) && isBoolean( rc.auth.isLoggedIn ) && rc.auth.isLoggedIn && !structKeyExists( rc, "alert" )) {
+      rc.alert={
+        "class"="success",
+        "text"="logout-success"
       };
     }
 
-    var logMessage = "user logged out.";
+    var logMessage="user logged out.";
 
-    if( rc.config.log && isDefined( "rc.auth.userid" ) && len( trim( rc.auth.userid ))) {
-      var user = contactService.get( rc.auth.userid );
+    if( rc.config.log && isDefined( "rc.auth.userid" ) && dataService.isGUID( rc.auth.userid )) {
+      var user=contactService.get( rc.auth.userid );
 
       if( !isNull( user )) {
-        logMessage = user.getUsername() & " logged out.";
+        logMessage=user.getUsername() & " logged out.";
       }
 
-      transaction {
-        var logentry = entityNew( "logentry" );
-        entitySave( logentry );
-        logentry
-          .save({ note = "Logged out", entity = rc.auth.userid })
-          .enterIntoLog( "security" );
-        transactionCommit();
-      }
+      var updateUserLog={
+        contactID=user.getID(),
+        add_contactLogEntry={
+          relatedEntity=user,
+          logaction=optionService.getOptionByName( "logaction", "security" ),
+          note=logMessage,
+          by=user,
+          dd=now(),
+          ip=cgi.remote_addr
+        }
+      };
+
+      var originalLogSetting=rc.config.log;
+      request.context.config.log=false;
+
+      user.save( updateUserLog );
+
+      request.context.config.log=originalLogSetting;
     }
 
-    writeLog( text = logMessage, type = "information", file = request.appName );
+    writeLog( text=logMessage, type="information", file=request.appName );
 
-    if( fw.getSubsystem() == "api" || listFirst( cgi.PATH_INFO, "/" ) == "api" || ( fw.getSubsystem() == "admin" && fw.getSection() == "api" )) {
-      var pageContext = getPageContext();
-      var response = pageContext.getFusionContext().getResponse();
-          response.setStatus( 401 );
-          response.setHeader( "Content-Type", "application/json" );
+    if( framework.getSubsystem() == "api" || listFirst( cgi.PATH_INFO, "/" ) == "api" ) {
+      var isLucee = listFindNoCase( "lucee,railo", server.ColdFusion.ProductName );
+      var pageContext=getPageContext();
+      var response = isLucee ? pageContext.getResponse() : pageContext.getFusionContext().getResponse();
 
-      rc.util.setCFSetting( "showdebugoutput", false );
-      pageContext.getCfoutput().clearAll();
-      writeOutput( serializeJSON( {"status"="error","detail"="Unauthorized"} ));
-      abort;
+      response.setHeader( "WWW-Authenticate", "Basic realm=""#request.appName#-API""" );
+
+      framework.renderData( "rawjson", '{"status":"error","detail":"Unauthorized"}', 401 );
+      framework.abortController();
     }
 
-    if( structKeyExists( rc, "alert" )) {
-      lock scope = "session"
-           type = "exclusive"
-           timeout = "5" {
-        session.alert = rc.alert;
-      }
-    }
-
-    fw.redirect( ":security.login" );
+    framework.redirect( ":security.login", "alert" );
   }
 
   public void function authorize( required struct rc ) {
-    lock scope = "session"
-         type = "exclusive"
-         timeout = "5" {
+    rc.auth = { isLoggedIn = false };
+
+    lock name="lock_#request.appName#_#session.urltoken#" type="exclusive" timeout="5" {
+      if( structKeyExists( session, "auth" ) && structKeyExists( session.auth, "isLoggedIn" )) {
+        structAppend( rc.auth, session.auth );
+      }
+
+      if( rc.auth.isLoggedIn ) {
+        return;
+      }
 
       // Auto login:
       if( structKeyExists( rc, 'authhash' )) {
@@ -165,15 +193,9 @@ component accessors=true {
       }
 
       // Always allow access to security && api:css
-      if(( fw.getSubsystem() == "" && !rc.config.secureDefaultSubsystem ) ||
-         ( fw.getSubsystem() == "" && fw.getSection() == "security" ) ||
-         ( fw.getSubsystem() == "adminapi" && fw.getSection() == "css" )) {
-        rc.auth.isLoggedIn = false;
-
-        if( structKeyExists( session, "auth" ) && structKeyExists( session.auth, "isLoggedIn" )) {
-          rc.auth = session.auth;
-        }
-
+      if(( framework.getSubsystem() == framework.getDefaultSubsystem() && !rc.config.secureDefaultSubsystem ) ||
+         ( framework.getSection() == "security" ) ||
+         ( framework.getSubsystem() == "adminapi" && framework.getSection() == "css" )) {
         return;
       }
 
@@ -187,54 +209,62 @@ component accessors=true {
           len( trim( HTTPRequestData.headers.authorization ))) {
         writeLog( text = "trying API basic auth", type = "information", file = request.appName );
         var basicAuth = toString( toBinary( listLast( HTTPRequestData.headers.authorization, " " )));
+
         rc.username = listFirst( basicAuth, ":" );
         rc.password = listRest( basicAuth, ":" );
         rc.dontRedirect = true;
-        doLogin( rc = rc );
+
+        doLogin( rc );
       }
 
       // no auth in session, user is not logged in:
       if( !structKeyExists( session, "auth" )) {
         rc.alert = {
           "class" = "danger",
-          "text"  = "no-auth-in-session"
+          "text" = "no-auth-in-session"
         };
-        doLogout( rc = rc );
+        doLogout( rc );
       }
 
       // store session info in the request context scope:
-      rc.auth = session.auth;
+      structAppend( rc.auth, session.auth );
 
-      if(
-          !rc.auth.isLoggedIn ||
-          !structKeyExists( rc.auth, "user" ) ||
-          !securityService.authIsValid( rc.auth )
-      ) {
+      if( !securityService.authIsValid( rc.auth )) {
         // something is wrong with the session:
         rc.alert = {
           "class" = "danger",
-          "text"  = "invalid-auth-struct"
+          "text" = "invalid-auth-struct"
         };
-        doLogout( rc = rc );
+        doLogout( rc );
+      }
+
+      if( !rc.auth.isLoggedIn ||
+          !structKeyExists( rc.auth, "user" )) {
+        // something is wrong with the session:
+        rc.alert = {
+          "class" = "danger",
+          "text" = "user-not-logged-in"
+        };
+        doLogout( rc );
       }
     }
   }
 
   public void function doRetrieve( required struct rc ) {
     if( structKeyExists( rc, 'email' ) && len( trim( rc.email ))) {
-      var user = contactService.getByEmail( rc.email );
+      var user=contactService.getByEmail( rc.email );
 
       if( !isNull( user )) {
-        var authhash = toBase64( encrypt( user.getID(), request.context.config.encryptKey ));
-        var activationEmails = contentService.getByFQA( "mail.activation" );
+        var authhash=toBase64( encrypt( user.getID(), rc.config.encryptKey ));
+        var activationEmails=contentService.getByFQA( "mail.activation" );
 
         if( arrayLen( activationEmails ) gt 0 ) {
-          var emailText = activationEmails[1];
+          var emailText=activationEmails[1];
         }
 
         if( isNull( emailText )) {
-          var logMessage = "missing activation email text, add text with fqa: 'mail.activation'";
-          writeLog( text = logMessage, type = "warning", file = request.appName );
+          var logMessage="missing activation email text, add text with fqa: 'mail.activation'";
+          writeLog( text=logMessage, type="warning", file=request.appName );
           throw( logMessage );
         }
 
@@ -245,24 +275,24 @@ component accessors=true {
           rc.util.parseStringVariables(
             emailText.getBody(),
             {
-              link = fw.buildURL( action = 'profile.password', queryString = { "authhash" = authhash })
+              link=framework.buildURL( action='profile.password', queryString={ "authhash"=authhash })
             }
           )
         );
 
-        session.alert = {
-          "class" = "success",
-          "text"  = "email-sent"
+        rc.alert = {
+          "class"="success",
+          "text"="email-sent"
         };
-        writeLog( text = "retrieve password email sent", type = "information", file = request.appName );
-        fw.redirect( ":security.login", "all" );
+        writeLog( text="retrieve password email sent", type="information", file=request.appName );
+        framework.redirect( ":security.login", "alert" );
       } else {
-        session.alert = {
-          "class" = "danger",
-          "text"  = "email-not-found"
+        rc.alert = {
+          "class"="danger",
+          "text"="email-not-found"
         };
-        writeLog( text = "retrieve password email not found", type = "warning", file = request.appName );
-        fw.redirect( ":security.retrieve" );
+        writeLog( text="retrieve password email not found", type="warning", file=request.appName );
+        framework.redirect( ":security.retrieve", "alert" );
       }
     }
   }

@@ -18,11 +18,11 @@ component accessors=true {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function before( rc ){
-    if( !rc.auth.role.getCanAccessAdmin()){
+    if( !request.auth.role.getCanAccessAdmin()){
       fw.redirect( "home:" );
     }
 
-    if( fw.getItem() == "edit" && !rc.auth.role.can( "change", fw.getSection())){
+    if( fw.getItem() == "edit" && !request.auth.role.can( "change", fw.getSection())){
       session.alert = {
         "class" = "danger",
         "text"  = "privileges-error-1"
@@ -35,7 +35,7 @@ component accessors=true {
       "text"  = "privileges-error-2"
     };
 
-    if( rc.auth.role.can( "view", fw.getSection()) || fw.getSection() == "main" ){
+    if( request.auth.role.can( "view", fw.getSection()) || fw.getSection() == "main" ){
       structDelete( session, "alert" );
     }
 
@@ -70,13 +70,13 @@ component accessors=true {
     // exit controller on non crud items
     switch( fw.getSection()){
       case "main":
-        var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' ));
+        var dashboard = lCase( replace( request.auth.role.getName(), ' ', '-', 'all' ));
         fw.setView( 'admin:main.dashboard-' & dashboard );
         return;
       break;
 
       case "profile":
-        rc.data = entityLoadByPK( "contact", rc.auth.userid );
+        rc.data = entityLoadByPK( "contact", request.auth.userid );
         fw.setView( 'profile.default' );
         return;
       break;
@@ -129,7 +129,7 @@ component accessors=true {
       }
     }
 
-    if( !rc.auth.role.can( "change", variables.entity )){
+    if( !request.auth.role.can( "change", variables.entity )){
       var lineactionPointer = listFind( rc.lineactions, '.edit' );
       if( lineactionPointer ){
         rc.lineactions = listDeleteAt( rc.lineactions, lineactionPointer );
@@ -378,7 +378,7 @@ component accessors=true {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function new( rc ){
-    if( !rc.auth.role.can( "change", fw.getSection())){
+    if( !request.auth.role.can( "change", fw.getSection())){
       session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
@@ -396,10 +396,10 @@ component accessors=true {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function edit( rc ){
-    param rc.modal = false;
-    param rc.editable = true;
-    param rc.inline = false;
-    param rc.namePrepend = "";
+    param boolean rc.modal = false;
+    param boolean rc.editable = true;
+    param boolean rc.inline = false;
+    param string rc.namePrepend = "";
 
     rc.submitButtons = variables.submitButtons;
     rc.fallbackView = "elements/edit";
@@ -417,7 +417,7 @@ component accessors=true {
     var object = entityNew( rc.entity );
 
     // is this a loggable object?
-    rc.canBeLogged = ( rc.config.log && isInstanceOf( object, "root.model.logged" ));
+    rc.canBeLogged = ( request.config.log && isInstanceOf( object, "root.model.logged" ));
     if( rc.entity == "logentry" ){
       rc.canBeLogged = false;
     }
@@ -469,6 +469,7 @@ component accessors=true {
       var savedValue = evaluate( "rc.data.get#property.name#()" );
 
       if( !isNull( savedValue )){
+        // convert multiple items (checkbox, multi-select) to a list of IDs
         if( isArray( savedValue )){
           var savedValueList = "";
           for( var individualValue in savedValue ){
@@ -478,8 +479,6 @@ component accessors=true {
         }
 
         columnsInForm[indexNr].saved = savedValue;
-      } else if( structKeyExists( rc, property.name )) {
-        columnsInForm[indexNr].saved = rc[property.name];
       }
     }
 
@@ -494,7 +493,7 @@ component accessors=true {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   public void function delete( rc ){
-    if( !rc.auth.role.can( "delete", fw.getSection())){
+    if( !request.auth.role.can( "delete", fw.getSection())){
       session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
@@ -550,7 +549,7 @@ component accessors=true {
       fw.redirect( "admin:#fw.getSection()#.default" );
     }
 
-    if( !rc.auth.role.can( "change", fw.getSection())){
+    if( !request.auth.role.can( "change", fw.getSection())){
       session.alert = {
         "class" = "danger",
         "text"  = "privileges-error"
@@ -561,14 +560,14 @@ component accessors=true {
     transaction {
     // Load existing, or create a new entity
     if( structKeyExists( rc, "#variables.entity#id" )){
-      rc.data = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
+        rc._entityToSave = entityLoadByPK( variables.entity, rc["#variables.entity#id"] );
     } else {
-      rc.data = entityNew( variables.entity );
-      entitySave( rc.data );
+        rc._entityToSave = entityNew( variables.entity );
+        entitySave( rc._entityToSave );
     }
 
     // Log create/update time and user if( object supprts it:
-      rc.data = rc.data.save( rc );
+      rc.data = rc._entityToSave.init().save( rc );
 
       transactionCommit();
     }

@@ -1,22 +1,23 @@
 component extends="framework.one" {
   request.context.startTime = getTickCount();
 
+  // set tihs to true during updates:
+  downForMaintenance = false;
+
   // CF application setup:
   this.sessionmanagement = true;
-  this.setclientcookies = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
-  this.mappings["/root"] = listChangeDelims( getDirectoryFromPath( getCurrentTemplatePath()), '/', '/\' );
+  this.mappings["/root"] = request.root = listChangeDelims( getDirectoryFromPath( getCurrentTemplatePath()), "/", "/\" );
 
   // Global variables:
   request.appName = "Mustang";
   request.version = "1.0.0";
-  request.root = this.mappings["/root"];
 
-  // replace &amp; with &
+  // replaces &amp; with & in the query string:
   cleanXHTMLQueryString();
 
   // Config:
-  request.context.config = cfg = getConfig( cgi.server_name );
+  request.context.config = cfg = getConfig();
 
   // Reload:
   if( structKeyExists( url, "reload" ) && url.reload != cfg.reloadpw ){
@@ -26,203 +27,232 @@ component extends="framework.one" {
   request.reset = structKeyExists( url, "reload" );
 
   // Config based global variables:
-  request.context.debug = ( listFind( cfg.debugIP, cgi.remote_addr ) && cfg.showDebug );
+  request.context.debug = cfg.showDebug && ( listFind( cfg.debugIP, cgi.remote_addr ) || !len( trim( cfg.debugIP )));
   request.webroot = cfg.webroot;
-  request.fileUploads = cfg.fileUploads;
+  request.fileUploads = cfg.paths.fileUploads;
 
   // Private variables:
-  downForMaintenance = false; // true during updates
   live = cfg.appIsLive;
 
   // Datasource settings:
   this.datasource = cfg.datasource;
-  this.ORMEnabled = true;
-  this.ORMSettings = {
+
+  this.ormEnabled = true;
+  this.ormSettings = {
     CFCLocation = "/root/model",
     DBCreate = ( live ? ( request.reset ? "update" : "none" ) : ( request.reset ? "dropcreate" : "update" )),
     logSQL = live ? false : true,
     SQLScript = cfg.nukescript,
+    saveMapping = true,
     secondaryCacheEnabled = live ? true : false,
-    saveMapping = ( live ? false : ( request.reset ? true : false )),
-    autogenMap = ( live ? false : ( request.reset ? true : false )),
-    automanageSession = false,
-    flushAtRequestend = false
+    cacheProvider = "ehcache"
   };
 
+  // framework settings:
   framework = {
+    generateSES = true,
+    SESOmitIndex = true,
     base = "/root",
-    error = "app.error",
+    error = ":app.error",
     baseURL = cfg.webroot,
-    diLocations = "/root/model/services",
+    diLocations = "/root/services,/root/subsystems/api/services",
+    diConfig = {
+      constants = {
+        root = request.root,
+        config = cfg
+      }
+    },
+    routesCaseSensitive = false,
     environments = {
       live = {
         cacheFileExists = true,
-        password = cfg.reloadpw
+        password = cfg.reloadpw,
+        trace = cfg.showDebug
       },
       dev = {
         reloadApplicationOnEveryRequest = true,
-        trace = true
+        trace = cfg.showDebug
       }
     }
   };
 
-  private void function setupApplication() {
+
+
+  // public functions:
+
+  public void function setupApplication() {
     if( structKeyExists( url, "nuke" )) {
       // rebuild ORM:
       ORMReload();
       writeLog( text = "ORM reloaded", type = "information", file = request.appName );
+      structDelete( application, "threads" );
     }
 
     // empty caches:
-    ORMEvictQueries();
-    cacheRemove( arrayToList( cacheGetAllIds()));
+    try {
+      ORMEvictQueries();
+    } catch( any e ) {}
 
-    lock scope="application" timeout="5" type="exclusive" {
-      application.beanFactory = new framework.ioc( "/root/model/services" );
-    }
+    cacheRemove( arrayToList( cacheGetAllIds()));
 
     writeLog( text = "application initialized", type = "information", file = request.appName );
   }
 
-  private void function setupRequest() {
-    // globally available utility libraries:
-    lock scope="application" timeout="5" type="readOnly" {
-      request.context.i18n    = i18n    = application.beanFactory.getBean( 'translationService' );
-      request.context.util    = util    = application.beanFactory.getBean( 'utilityService' );
-      request.context.design  = design  = application.beanFactory.getBean( 'designService' );
+  public void function setupSession() {
+    structDelete( session, "progress" );
+  }
+
+  public void function setupRequest() {
+    if( request.reset ) {
+      setupSession();
     }
+
+    // globally available utility libraries:
+    var beanFactory = getBeanFactory();
+
+    request.context.i18n = i18n = beanFactory.getBean( "translationService" );
+    request.context.util = util = beanFactory.getBean( "utilityService" );
 
     util.setCFSetting( "showdebugoutput", request.context.debug );
 
     // rate limiter:
     util.limiter();
 
-    // alert messages:
-    lock scope="session" timeout="5" type="readOnly" {
-      if( structKeyExists( session, "alert" ) && isStruct( session.alert ) &&
-          structKeyExists( session.alert, 'class' ) &&
-          structKeyExists( session.alert, 'text' )) {
-        request.context.alert = session.alert;
-
-        if( !structKeyExists( request.context.alert, "stringVariables" )) {
-          request.context.alert.stringVariables = {};
-        }
-
-        structDelete( session, "alert" );
-      }
-    }
-
     // down for maintenance message to non dev users:
     if( downForMaintenance && !listFind( cfg.debugIP, cgi.remote_addr )) {
       writeOutput( 'Geachte gebruiker,
-        <br /><br />
-        Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
-        Onze excuses voor het ongemak.
-        <!-- IP adres: #cgi.remote_addr# -->
+            <br /><br />
+            Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
+            Onze excuses voor het ongemak.
+            <!-- IP adres: #cgi.remote_addr# -->
       ' );
       abort;
     }
 
     // security:
-    if( !cfg.disableSecurity ) {
-      controller( "security.authorize" );
-    } else {
-      request.context.auth.isLoggedIn = true;
-      request.context.auth.user = new root.lib.user();
-      request.context.auth.role = new root.lib.role();
-    }
+    controller( ":security.authorize" );
 
     // internationalization:
-    controller( "i18n.setLanguage" );
+    controller( ":i18n.load" );
 
     // content:
-    if( getSubsystem() == "" || listFindNoCase( cfg.contentSubsystems, getSubsystem())) {
-      controller( "content" );
+    if( getSubsystem() == getDefaultSubsystem() || listFindNoCase( cfg.contentSubsystems, getSubsystem())) {
+      controller( ":admin-ui.load" );
     }
 
-    // try to queue up crud actions:
-    if( getSubsystem() == "admin" && !cachedFileExists( request.root & '/subsystems/admin/controllers/#getSection()#.cfc' )){
-      controller( 'admin:crud.#getItem()#' );
+    // try to queue up crud (admin) actions:
+    if( getSubsystem() == getDefaultSubsystem() && !util.fileExistsUsingCache( request.root & "/controllers/#getSection()#.cfc" )) {
+      controller( ":crud.#getItem()#" );
     }
 
     // try to queue up api actions:
-    if( getSubsystem() == "api" && !cachedFileExists( request.root & '/subsystems/api/controllers/#getSection()#.cfc' )){
-      controller( 'api:main.#getItem()#' );
+    if( getSubsystem() == "api" && !util.fileExistsUsingCache( request.root & "/subsystems/api/controllers/#getSection()#.cfc" )) {
+      controller( "api:main.#getItem()#" );
     }
   }
 
-  private void function setupEnvironment( string environment="" ) {
+  public void function setupEnvironment( string environment="" ) {
     // App specific globals
-    switch( environment ) {
-      case 'dev':
+    switch( environment ){
+      case "dev":
         request.version &= "a" & REReplace( "$Revision: 0 $", "[^\d]+", "", "all" );
         break;
     }
   }
 
-  private void function cleanXHTMLQueryString() {
-    for( var kv in url ) {
-      if( kv contains ';' ) {
-        url[listRest( kv, ';' )] = url[kv];
-        structDelete( url, kv );
-      }
-    };
-  }
-
-  private string function onMissingView() {
-    if( fileExists( request.root & "/views/" & getSection() & "/" & getItem() & ".cfm" )) {
+  public string function onMissingView() {
+    if( util.fileExistsUsingCache( request.root & "/views/" & getSection() & "/" & getItem() & ".cfm" )) {
       return view( getSection() & "/" & getItem());
     }
 
-    if( fileExists( request.root & "/subsystems/" & getSubsystem() & "/views/" & getSection() & "/" & getItem() & ".cfm" )) {
+    if( util.fileExistsUsingCache( request.root & "/subsystems/" & getSubsystem() & "/views/" & getSection() & "/" & getItem() & ".cfm" )) {
       return view( getSubsystem() & ":" & getSection() & "/" & getItem());
     }
 
-    if( structKeyExists( request.context, "fallbackView" )) {
+    if( structKeyExists( request.context, "fallbackView" )){
       return view( request.context.fallbackView );
     }
 
-    return view( "elements/page" );
+    return view( ":app/notfound" );
+  }
+
+  public void function onError( any exception, string event ) {
+    if( getSubsystem() == "api" ) {
+      if( structKeyExists( exception, "cause" )) {
+        return onError( exception.cause, event );
+      }
+
+      if( structKeyExists( exception, "message" ) && structKeyExists( exception, "detail" )) {
+        var jsonService = getBeanFactory().getBean( "jsonService" );
+        var pageContext = getPageContext();
+        var response = pageContext.getResponse();
+
+        response.setContentType( "application/json" );
+        response.setStatus( 500 );
+
+        writeOutput(jsonService.serialize({
+          "status" = "error",
+          "error" = "uncaught error: " & exception.message,
+          "detail" = exception.detail
+        }));
+        abort;
+      }
+    }
+
+    super.onError( argumentCollection = arguments );
+  }
+
+
+
+  // private functions:
+
+  private void function cleanXHTMLQueryString() {
+    for( var kv in url ) {
+      if( kv contains ";" ) {
+        url[listRest( kv, ";" )] = url[kv];
+        structDelete( url, kv );
+      }
+    };
   }
 
   private string function getEnvironment() {
     return live ? "live" : "dev";
   }
 
-  private struct function getConfig( string site="" ) {
+  private struct function getConfig( string site=cgi.server_name ) {
     // DEFAULT:
     var defaultSettings = {
-      "debugEmail"        = "bugs@mstng.info",
-      "showDebug"         = false,
-      "ownerEmail"        = "info@mstng.info",
-      "cfAdminPassword"   = "",
-      "appIsLive"         = true,
-      "debugIP"           = "",
-      "datasource"        = "mustang",
-      "log"               = "false",
-      "lognotes"          = "false",
-      "nukescript"        = "populate.sql",
-      "webroot"           = "",
-      "reloadpw"          = "1",
-      "disableSecurity"   = true,
-      "fileUploads"       = "#request.root#/../ProjectsTemporaryFiles/files_" & request.appName,
-      "defaultLanguage"   = "en_US",
-      "secureDefaultSubsystem" = false,
-      "securedSubsystems" = "admin",
-      "contentSubsystems" = "admin",
-      "encryptKey"        = ""
+      "appIsLive"               = true,
+      "cfAdminPassword"         = "",
+      "contentSubsystems"       = "",
+      "datasource"              = "",
+      "debugEmail"              = "bugs@mstng.info",
+      "debugIP"                 = "127.0.0.1",
+      "defaultLanguage"         = "en_US",
+      "disableSecurity"         = false,
+      "encryptKey"              = "7Wp8Zwz2ccvvtbxZWkvKm32a3v9edes8Y3xxHxeAaMuZkjV84P2uW6s3m3Mj9sMz",
+      "log"                     = true,
+      "lognotes"                = false,
+      "nukescript"              = "",
+      "ownerEmail"              = "info@mstng.info",
+      "paths" = { "fileUploads" = "#request.root#/../ProjectsTemporaryFiles/files_" & request.appName },
+      "reloadpw"                = "1",
+      "secureDefaultSubsystem"  = true,
+      "securedSubsystems"       = "adminapi,api",
+      "showDebug"               = false,
+      "webroot"                 = ""
     };
 
     // try cache:
     if( !structKeyExists( url, "reload" )) {
-    var config = cacheGet( "config-#this.name#" );
+      var config = cacheGet( "config-#this.name#" );
 
       // found cached settings, only use it in live apps:
       if( !isNull( config ) &&
           structKeyExists( config, "appIsLive" ) &&
           isBoolean( config.appIsLive ) &&
           config.appIsLive ) {
-          return config;
+        return config;
       }
     }
 
@@ -242,14 +272,21 @@ component extends="framework.one" {
     var resources = cacheGet( "resources-#this.name#" );
 
     if( isNull( resources ) || request.reset || !cfg.appIsLive ) {
-      var modelFiles = directoryList( this.mappings["/root"] & "/model", true, "name", "*.cfc", "name asc" );
       var listOfResources = "";
+      var modelFiles = directoryList( this.mappings["/root"] & "/model", true, "name", "*.cfc", "name asc" );
 
       for( var fileName in modelFiles ) {
         listOfResources = listAppend( listOfResources, reverse( listRest( reverse( fileName ), "." )));
       }
 
-      var resources = [{ "$RESOURCES" = { resources = listOfResources, subsystem = "api" }}];
+      var resources = [
+        { "/api/:entity/search/$" = "/api::entity/search/" },
+        { "/api/:entity/search/:keyword/$" = "/api::entity/search/keywords/:keyword" },
+        { "/api/:entity/filter/$" = "/api::entity/filter/" },
+        { "/api/auth/:action" = "/api:auth/:action/" },
+        { "$RESOURCES" = { resources = listOfResources, subsystem = "api" }},
+        {}
+      ];
 
       cachePut( "resources-#this.name#", resources );
     }

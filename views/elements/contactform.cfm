@@ -13,11 +13,11 @@
 		</cfif>
 
     <div class="form-group">
-      <label class="col-sm-4 control-label">#rc.i18n.translate( 'security-role' )#</label>
+      <label class="col-sm-4 control-label">#request.i18n.translate( 'security-role' )#</label>
       <div class="col-sm-8">
         <select name="securityrole" class="form-control">
-          <option value="#rc.secutiryRoleEntrepreneurSU.getID()#"#isDefined('rc.securityRole') and rc.securityRole.getID() eq rc.secutiryRoleEntrepreneurSU.getID()?' selected':''#>#rc.i18n.translate( rc.secutiryRoleEntrepreneurSU.getName() )#</option>
-          <option value="#rc.secutiryRoleEntrepreneur.getID()#"#isDefined('rc.securityRole') and rc.securityRole.getID() eq rc.secutiryRoleEntrepreneur.getID()?' selected':''#>#rc.i18n.translate( rc.secutiryRoleEntrepreneur.getName() )#</option>
+          <option value="#rc.secutiryRoleEntrepreneurSU.getID()#"#isDefined('rc.securityRole') and rc.securityRole.getID() eq rc.secutiryRoleEntrepreneurSU.getID()?' selected':''#>#request.i18n.translate( rc.secutiryRoleEntrepreneurSU.getName() )#</option>
+          <option value="#rc.secutiryRoleEntrepreneur.getID()#"#isDefined('rc.securityRole') and rc.securityRole.getID() eq rc.secutiryRoleEntrepreneur.getID()?' selected':''#>#request.i18n.translate( rc.secutiryRoleEntrepreneur.getName() )#</option>
         </select>
       </div>
     </div>
@@ -47,7 +47,7 @@
 	    <cfif ( local.fieldname neq "password" or (local.fieldname eq "password" and not isDefined("rc.contact")) ) and
 			      ( local.fieldname neq "username" or (local.fieldname eq "username" and not isDefined("rc.contact")) )>
 		    <div class="form-group">
-		      <label class="col-sm-4 control-label">#rc.i18n.translate( local.fieldname )#</label>
+		      <label class="col-sm-4 control-label">#request.i18n.translate( local.fieldname )#</label>
 		      <div class="col-sm-8">
 		      	<cfif local.fieldtype eq "file">
 							<div class="fileinput">

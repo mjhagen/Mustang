@@ -4,9 +4,9 @@
 
 <cfoutput>
   <cfif not local.hideChooseOption>
-    <option value="">#request.context.i18n.translate( 'choose' )#</option>
+    <option value="">#rc.i18n.translate( 'choose' )#</option>
   </cfif>
-  
+
   <cfloop array="#local.options#" index="local.option">
     <cfset local.viewOptions = { options = local.option.getChildren(), selected = local.selected, hideChooseOption = true } />
 

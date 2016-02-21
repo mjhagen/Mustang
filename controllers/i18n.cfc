@@ -1,77 +1,74 @@
-component output="false" {
-  public i18n function init( required struct fw ) {
-    variables.fw = fw;
-    return this;
-  }
+component accessors=true {
+  property localeService;
 
-  public void function setLanguage( required struct rc ) {
+  public void function load( required struct rc ) {
     var defaultLanguage = rc.config.defaultLanguage;
     var localeID = createUUID();
     var reload = false;
 
     lock scope="session" timeout=5 {
-      if( not structKeyExists( cookie, "localeID" ) or
-          not structKeyExists( session, "localeID" ) or
-          not structKeyExists( session, "locale" ) or
-          structKeyExists( url, "localeID" ) or
-          structKeyExists( url, "reload" )){
+      if( !structKeyExists( cookie, "localeID" ) ||
+          !structKeyExists( session, "localeID" ) ||
+          !structKeyExists( session, "locale" ) ||
+          structKeyExists( url, "localeID" ) ||
+          request.reset ) {
         reload = true;
       }
     }
 
     if( reload ) {
-      if( structKeyExists( rc, "localeID" ) and len( trim( rc.localeID ))) {
+      if( structKeyExists( rc, "localeID" ) && len( trim( rc.localeID ))) {
         localeID = rc.localeID;
       }
 
-      if( not len( trim( localeID )) and structKeyExists( cookie, "localeID" ) and len( trim( cookie.localeID ))) {
+      if( !len( trim( localeID )) && structKeyExists( cookie, "localeID" ) && len( trim( cookie.localeID ))) {
         localeID = cookie.localeID;
       }
 
-      if( not len( trim( localeID ))) {
+      if( !len( trim( localeID ))) {
         lock scope="session" timeout=5 {
-          if( structKeyExists( session, "localeID" ) and len( trim( session.localeID ))) {
+          if( structKeyExists( session, "localeID" ) && len( trim( session.localeID ))) {
             localeID = session.localeID;
           }
         }
       }
 
-      var locale = entityLoadByPK( "locale", localeID );
+      var locale = localeService.get( localeID ); // entityLoadByPK( "locale", localeID );
 
-      if( isNull( locale ) and len( trim( defaultLanguage ))) {
+      if( isNull( locale ) && len( trim( defaultLanguage ))) {
         var defaultLanguageCode = listGetAt( defaultLanguage, 1, "_" );
         var defaultCountryCode = listGetAt( defaultLanguage, 2, "_" );
-        var language = entityLoad( "language", { "code" = defaultLanguageCode }, true );
-        var country = entityLoad( "country", { "code" = defaultCountryCode }, true );
-        
-        if( not isNull( language ) and not isNull(country) ){
+        var language = entityLoad( "language", { "iso2" = defaultLanguageCode }, true );
+        var country = entityLoad( "country", { "iso2" = defaultCountryCode }, true );
+
+        if( !isNull( language ) && !isNull(country) ) {
           var locale = entityLoad( "locale" , { country = country, language = language }, true );
         }
-        
-        if( isNull( locale )){
+
+        if( isNull( locale )) {
           var locale = entityNew( "locale" );
 
-        if( isNull( language )) {
-		          var language = entityNew( "language" );
-		          language.setCode( defaultLanguageCode );
-		      }
-	
-        if( isNull( country )) {
-	          var country = entityNew( "country" );
-	          country.setCode( defaultCountryCode );
-	        }
-	
-	        locale.setID( localeID );
-	        locale.setLanguage( language );
-	        locale.setCountry( country );
-	      }
+          if( isNull( language )) {
+            var language = entityNew( "language" );
+            language.setISO2( defaultLanguageCode );
+          }
+
+          if( isNull( country )) {
+            var country = entityNew( "country" );
+            country.setISO2( defaultCountryCode );
+          }
+
+          locale.setID( localeID );
+          locale.setLanguage( language );
+          locale.setCountry( country );
+        }
       }
 
       localeID = locale.getID();
 
       var localeCode = locale.getCode();
 
-      if( not isNull( localeCode ) and
+      if( !isNull( localeCode ) &&
           len( trim( localeCode ))) {
         setLocale( localeCode );
       }

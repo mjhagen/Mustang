@@ -80,10 +80,10 @@
       </cfif>
 
       <div id="#local.column.name#_inlineedit" class="inlineedit">
-        <a class="btn btn-sm btn-primary inlineedit-modal-trigger" href="#buildURL( 'admin:' & local.columnEntityName & '.new?modal=1' & ( structKeyExists( rc, '#rc.entity#id' ) ? '&fk=#rc['#rc.entity#id']#' : '' ) & '&source=' & local.column.fkColumn )#" data-target="##modal-dialog" data-field="#structKeyExists( local.column, 'singularName' )?local.column.singularName:local.column.name#">#i18n.translate( 'add-#local.column.name#' )#</a>
+        <a class="btn btn-sm btn-primary inlineedit-modal-trigger" href="#buildURL( '.new?modal=1' & ( structKeyExists( rc, '#rc.entity#id' ) ? '&fk=#rc['#rc.entity#id']#' : '' ) & '&source=' & local.column.fkColumn )#" data-target="##modal-dialog" data-field="#structKeyExists( local.column, 'singularName' )?local.column.singularName:local.column.name#">#i18n.translate( 'add-#local.column.name#' )#</a>
       </div>
     <cfelseif structKeyExists( local.column, "autocomplete" )>
-      #view( 'form/select', {
+      #view( 'form/edit/select', {
         "id"          = "#local.idPrepend##local.column.name#",
         "class"       = "autocomplete",
         "name"        = local.formElementName,
@@ -169,7 +169,7 @@
           <cfif structKeyExists( local.column, "affectsform" )><cfset listAppend( local.classNames, affectsform, " " ) /></cfif>
           <cfif structKeyExists( local.column, "affected" )><cfset listAppend( local.classNames, affected, " " ) /></cfif>
 
-          #view( 'form/select', {
+          #view( 'form/edit/select', {
             "id"        = "#local.idPrepend##local.column.name#",
             "name"      = local.formElementName,
             "class"     = local.classNames,
@@ -204,7 +204,7 @@
           ORDER BY  sortorder
         </cfquery>
 
-        #view( 'form/select', {
+        #view( 'form/edit/select', {
           "id"                = "#local.idPrepend##local.column.name#",
           "name"              = local.formElementName,
           "class"             = structKeyExists( local.column, "affectsform" ) ? " affectsform" : "",

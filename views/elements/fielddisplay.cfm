@@ -2,9 +2,7 @@
 <cfparam name="local.column" default="#{}#" />
 <cfparam name="local.column.name" default="" />
 
-<cfset local.formElementName = local.namePrepend & local.column.name />
-
-<cfif isNull( local.column )><cfexit /></cfif>
+<cfif isNull( local.column ) or not isStruct( local.column ) or not structCount( local.column )><cfexit /></cfif>
 
 <cfif isNull( local.val )>
   <cfif isNull( local.data )><cfexit /></cfif>
@@ -36,8 +34,9 @@
 
 <cfoutput>
   <cfif not isNull( local.val )>
-    <cfif isSimpleValue( local.val )>
-      <p class="form-control-static">
+    <div class="form-control-static">
+      <!--- column --->
+      <cfif isSimpleValue( local.val )>
         <cfif structKeyExists( local.column.data, "listmask" )>
           <cfset local.val = replaceNoCase( local.column.data.listmask, '{val}', local.val, 'all' ) />
         </cfif>
@@ -94,67 +93,16 @@
         <cfelse>
           #replace( local.val, '#chr( 13 )##chr( 10 )#', '<br />', 'all' )#
         </cfif>
-      </p>
-    <cfelseif isArray( local.val ) and arrayLen( local.val )>
-      <cfset local.listedIDs = [] />
-      <div class="form-control-static">
-        <ul class="nobullets">
-          <cfloop array="#local.val#" index="local.singleVal">
-            <cfset local.valID        = local.singleVal.getID() />
-            <cfset local.valString    = local.singleVal.getName() />
-            <cfset local.linkSection  = local.singleVal.getEntityName() />
 
-            <cfif arrayFind( local.listedIDs, local.valID )>
-              <cfcontinue />
-            </cfif>
-            <cfset arrayAppend( local.listedIDs, local.valID ) />
+      <!--- to many --->
+      <cfelseif isArray( local.val ) and arrayLen( local.val )>
+        #view( 'form/view/to-many', { val = local.val, column=local.column })#
 
-            <cfif isNull( local.valString )>
-              <li>#i18n.translate( 'no-name' )#</li>
-              <cfcontinue />
-            </cfif>
+      <!--- to one --->
+      <cfelseif isObject( local.val )>
+        #view( 'form/view/to-one', { val=local.val, column=local.column, formElementName=local.namePrepend & local.column.name })#
 
-            <cfif structKeyExists( local.column.data, "translateOptions" )>
-              <cfset local.valString = i18n.translate( local.valString ) />
-            </cfif>
-
-          <cfif not isNull( local.valID ) and len( trim( local.valID ))>
-              <cfset local.valString = '<a href="#buildURL( action = local.linkSection & '.view', queryString = { '#local.linkSection#id' = local.valID })#">#local.valString#</a>' />
-            </cfif>
-
-            <li>#local.valString#</li>
-          </cfloop>
-        </ul>
-      </div>
-    <cfelseif isObject( local.val )>
-      <cfsetting requestTimeout="5" />
-
-      <cfset local.fieldlist = "" />
-      <cfset local.obj = local.val />
-      <cfset local.textvalue = local.obj.getName() />
-
-      <cfif isNull( local.textvalue )>
-        <cfset local.textvalue = "noname" />
       </cfif>
-
-      <cfif structKeyExists( local.column.data, "translateOptions" )>
-        <cfset local.textvalue = i18n.translate( local.textvalue ) />
-      </cfif>
-
-      <cfif structKeyExists( local.column.data, 'affectsform' )>
-        <cfset local.fieldlist = local.obj.getFieldList() />
-      </cfif>
-
-      <cfif len( trim( local.obj.getID()))>
-        <cfset local.entityName = listLast( getMetaData( local.obj ).name, '.' ) />
-        <cfset local.fqa = local.entityName & '.view' />
-        <cfset local.textvalue = '<a href="' & buildURL( local.fqa, '', { '#local.entityName#id' = local.obj.getID()}) & '">' & local.textvalue & '</a>' />
-        <input type="hidden" name="#local.formElementName#" value="#local.obj.getID()#" />
-      </cfif>
-
-      <p class="form-control-static">
-        <span class="selectedoption" data-fieldlist="#local.fieldlist#">#local.textvalue#</span>
-      </p>
-    </cfif>
+    </div>
   </cfif>
 </cfoutput>

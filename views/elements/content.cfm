@@ -18,7 +18,7 @@
 
 <cfif rc.auth.isLoggedIn and rc.auth.role.can( "change", "content" )>
   <cfset local.editContentLink = buildURL(
-    action = "admin:content.edit",
+    action = ":content.edit",
     querystring = {
       "returnTo" = getFullyQualifiedAction()
     }
@@ -29,17 +29,16 @@
 <cfoutput>
   <div class="row">
     <div class="col-lg-12">
-      <cfif getSubsystem() eq "admin">
-        <h1 class="page-header">#local.headerTitle#</h1>
-        <div class="hidden-xs">#view( "elements/breadcrumbs" )#</div>
-      </cfif>
+      <h1 class="page-header">#local.headerTitle#</h1>
+      <div class="hidden-xs">#view( "elements/breadcrumbs" )#</div>
+
+      #view( "elements/alert" )#
+
       <cfif isDefined( "rc.content" ) and len( trim( rc.content.getBody()))>
         <p>#rc.content.getBody()#</p>
       </cfif>
     </div>
   </div>
-
-  #view( 'elements/alert' )#
 
   #local.generatedBody#
 </cfoutput>

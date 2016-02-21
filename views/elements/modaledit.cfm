@@ -11,7 +11,7 @@
         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
         <h4 class="modal-title">#i18n.translate('add')#</h4>
       </div>
-      <div class="modal-body">#view('elements/edit',local)#</div>
+      <div class="modal-body">#view( "elements/edit",local)#</div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">#i18n.translate('modal-cancel')#</button>
         <button type="button" class="btn btn-primary inlineedit-modal-save">#i18n.translate('modal-save')# #lCase( i18n.translate( getSection()))#</button>

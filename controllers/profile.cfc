@@ -1,21 +1,18 @@
-component accessors="true" {
+component accessors=true {
+  property framework;
   property contactService;
+  property securityService;
 
-  public any function init( required struct fw ) {
-  	variables.fw = fw;
-    return this;
-  }
-
-  function before( required struct rc ) {
+  public void function before( required struct rc ) {
     rc.subnav = "profile";
     rc.subsubnav = "password";
   }
 
-  function default( required struct rc ) {
+  public void function default( required struct rc ) {
     rc.data = contactService.get( rc.auth.userID );
   }
 
-  function save( required struct rc ) {
+  public void function save( required struct rc ) {
     transaction {
       var currentUser = contactService.get( rc.auth.userID );
 
@@ -41,19 +38,20 @@ component accessors="true" {
 
       currentUser.save( formFields );
 
-      transactionCommit();
+
     }
 
     session.auth.user = contactService.get( rc.auth.userID );
-    session.alert = {
-      class = 'success',
-      text  = rc.i18n.translate('saved-text')
+
+    rc.alert = {
+      class = "success",
+      text  = "saved-text"
 	  };
 
-    fw.redirect( '.default' );
+    framework.redirect( ".default", "alert" );
   }
 
-  function newpassword( required struct rc ) {
+  public void function newpassword( required struct rc ) {
     param rc.newPassword = rc.util.generatePassword( 8 );
 
     if( len( trim( rc.newPassword )) lt 8 ) {
@@ -63,7 +61,7 @@ component accessors="true" {
           "text"  = "password-change-fail-tooshort"
         };
       }
-      fw.redirect( '.password' );
+      framework.redirect( '.password' );
     }
 
     lock scope="session" timeout="5" {
@@ -78,7 +76,7 @@ component accessors="true" {
 
       if( isDefined( "currentUser" )) {
         currentUser.save({
-          password = contactService.hashPassword( rc.newPassword )
+          password = securityService.hashPassword( rc.newPassword )
         });
         lock scope="session" timeout="5" {
           session.alert = {
@@ -89,9 +87,9 @@ component accessors="true" {
         }
       }
 
-      transactionCommit();
+
     }
 
-    fw.redirect( ':' );
+    framework.redirect( ':' );
   }
 }

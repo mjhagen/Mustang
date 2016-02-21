@@ -1,11 +1,9 @@
 component extends="root.model.option"
           persistent=true
           table="option"
-          discriminatorvalue="logaction"
-          cacheuse="read-only"
-          hide=true {
-  property name="class" fieldType="column" length=32 inlist=1 inform=1 editable=1;
+          discriminatorValue="logaction" {
+  property name="cssclass" length=32 inlist=true inform=true editable=true;
   property name="logentries" singularName="logentry" fieldType="one-to-many" cfc="root.model.logentry" fkColumn="logactionid";
-
-  property persistent=0 name="name" inlist=1 inform=1 editable=1;
+  
+  property name="name" persistent=false inlist=true inform=true editable=true;
 }

@@ -28,7 +28,7 @@
     <ul class="nav nav-tabs">
       <li class="active"><a href="##form-#local.entity#" data-toggle="tab">#i18n.translate( getItem())#</a></li>
       <cfif structKeyExists( rc, "#local.entity#id" ) and local.canBeLogged>
-        <cfset local.log = entityLoad( "logentry", { entity = local.data }, "createDate DESC" ) />
+        <cfset local.log = entityLoad( "logentry", { relatedEntity = local.data }, "dd DESC", { maxresults = 15 }) />
         <cfif isDefined( "local.log" ) and arrayLen( local.log )>
           <li><a href="##changelog" data-toggle="tab">#i18n.translate('changelog')#</a></li>
         </cfif>
@@ -86,7 +86,7 @@
           <cfif structKeyExists( local.column, 'ORMType' ) and local.column.ORMType eq "boolean">
             <label for="#local.column.name#" class="col-lg-3 control-label"></label>
           <cfelse>
-            <label for="#local.column.name#" class="col-lg-3 control-label">
+            <label for="#local.column.name#" class="col-lg-3 control-label" title="#local.column.name#">
               #i18n.translate( local.column.name )#
               <cfif isDefined( "local.column.hint" )>
                 <i class="fa fa-question-circle" title="#i18n.translate( 'hint-#local.entity#-#local.column.name#' )#"></i>
@@ -171,7 +171,7 @@
                 <cfif len( trim( local.submitButton.modal ) )>
                   <a data-toggle="modal" href="##confirm#local.submitButton.value#" data-name="#local.submitButton.value#" class="btn btn-primary #local.submitButton.value#-button" data-style="expand-right">#i18n.translate( local.submitButton.value )#</a>
                   <button type="submit" class="hidden" data-name="#local.submitButton.value#"></button>
-                  #view('elements/modal',{name=local.submitButton.modal,yeslink=''})#
+                  #view( "elements/modal",{name=local.submitButton.modal,yeslink=''})#
                 <cfelse>
                   <button type="submit" data-name="#local.submitButton.value#" class="btn btn-primary #local.submitButton.value#-button" data-style="expand-right"><span class="ladda-label">#i18n.translate( local.submitButton.value )#</span></button>
                 </cfif>
@@ -192,20 +192,20 @@
                   <a data-toggle="modal" href="##confirmrestore" class="btn btn-success">#i18n.translate('btn-#local.entity#.restore')#</a>
                 </div>
               </div>
-              #view('elements/modal',{name="restore",yeslink=buildURL('.restore','?#local.entity#id=#rc[local.entity&'id']#')})#
+              #view( "elements/modal",{name="restore",yeslink=buildURL('.restore','?#local.entity#id=#rc[local.entity&'id']#')})#
             <cfelse>
               <div class="form-group">
                 <div class="col-lg-offset-3 col-lg-9">
                   <a data-toggle="modal" href="##confirmdelete" class="btn btn-danger">#i18n.translate('btn-#local.entity#.delete')#</a>
                 </div>
               </div>
-              #view('elements/modal',{name="delete",yeslink=buildURL('.delete','?#local.entity#id=#rc[local.entity&'id']#')})#
+              #view( "elements/modal",{name="delete",yeslink=buildURL('.delete','?#local.entity#id=#rc[local.entity&'id']#')})#
             </cfif>
           </cfif>
 
           <cfif local.data.hasProperty( 'createDate' ) and isDate( local.data.getCreateDate())>
             <small class="footnotes">
-              #i18n.translate( 'created' )#: 
+              #i18n.translate( 'created' )#:
               <cfif local.data.hasProperty( 'createContact' )>
                 <cfset local.creator = local.data.getCreateContact() />
                 <cfif isDefined( "local.creator" )>
@@ -216,7 +216,7 @@
               #lsDateFormat( local.data.getCreateDate(), i18n.translate( 'defaults-dateformat-small' ))# #i18n.translate('at')# #lsTimeFormat( local.data.getCreateDate(), 'HH:mm:ss' )#.
               <cfif isDate(local.data.getUpdateDate()) and dateDiff( 's', local.data.getCreateDate(), local.data.getUpdateDate()) gt 1>
                 <br />
-                #i18n.translate( 'updated' )#: 
+                #i18n.translate( 'updated' )#:
                 <cfif local.data.hasProperty( 'updateContact' )>
                   <cfset local.updater = local.data.getUpdateContact() />
                   <cfif isDefined( "local.updater" )>
