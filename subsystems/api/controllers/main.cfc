@@ -230,12 +230,12 @@ component accessors=true {
 
     if( structKeyExists( form, "batch" )) {
       if( isJSON( form.batch )) {
-        form.batch = deserializeJSON( form.batch );
+        form.batch = jsonService.deserialize( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
     } else if( isJson( payload ) ){
-      form.batch = [ deserializeJSON( payload ) ];
+      form.batch = [ jsonService.deserialize( payload ) ];
     } else {
       form.batch= [];
       for( keyVal in listToArray( payload, "&" )){
@@ -270,12 +270,12 @@ component accessors=true {
 
     if( structKeyExists( form, "batch" )){
       if( isJSON( form.batch )){
-        form.batch = deserializeJSON( form.batch );
+        form.batch = jsonService.deserialize( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
     } else if( isJson( payload ) ){
-      form.batch = [ deserializeJSON( payload) ];
+      form.batch = [ jsonService.deserialize( payload) ];
     } else{
       form.batch= [];
       for( keyVal in listToArray( payload, "&" )){
