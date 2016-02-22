@@ -20,7 +20,7 @@ component extends="framework.one" {
   request.context.config = cfg = getConfig();
 
   // Reload:
-  if( structKeyExists( url, "reload" ) && url.reload != cfg.reloadpw ){
+  if( structKeyExists( url, "reload" ) && url.reload != cfg.reloadpw ) {
     structDelete( url, "reload" );
   }
 
@@ -36,7 +36,6 @@ component extends="framework.one" {
 
   // Datasource settings:
   this.datasource = cfg.datasource;
-
   this.ormEnabled = true;
   this.ormSettings = {
     CFCLocation = "/root/model",
@@ -55,6 +54,7 @@ component extends="framework.one" {
     base = "/root",
     error = ":app.error",
     baseURL = cfg.webroot,
+    unhandledPaths = "/inc,/tests,/browser,/cfimage,/diagram",
     diLocations = "/root/services,/root/subsystems/api/services",
     diConfig = {
       constants = {
@@ -121,10 +121,10 @@ component extends="framework.one" {
     // down for maintenance message to non dev users:
     if( downForMaintenance && !listFind( cfg.debugIP, cgi.remote_addr )) {
       writeOutput( 'Geachte gebruiker,
-            <br /><br />
-            Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
-            Onze excuses voor het ongemak.
-            <!-- IP adres: #cgi.remote_addr# -->
+        <br /><br />
+        Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
+        Onze excuses voor het ongemak.
+        <!-- IP adres: #cgi.remote_addr# -->
       ' );
       abort;
     }
@@ -153,7 +153,7 @@ component extends="framework.one" {
 
   public void function setupEnvironment( string environment="" ) {
     // App specific globals
-    switch( environment ){
+    switch( environment ) {
       case "dev":
         request.version &= "a" & REReplace( "$Revision: 0 $", "[^\d]+", "", "all" );
         break;
@@ -169,7 +169,7 @@ component extends="framework.one" {
       return view( getSubsystem() & ":" & getSection() & "/" & getItem());
     }
 
-    if( structKeyExists( request.context, "fallbackView" )){
+    if( structKeyExists( request.context, "fallbackView" )) {
       return view( request.context.fallbackView );
     }
 

@@ -1,2 +1,2 @@
-component extends="mustang.model.services.baseService" {
+component extends="root.services.baseService" {
 }

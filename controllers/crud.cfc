@@ -73,7 +73,7 @@ component accessors=true {
     // exit controller on non crud items
     switch( framework.getSection()) {
       case "main":
-        var dashboard = lCase( replace( rc.auth.role.getName(), ' ', '-', 'all' ));
+        var dashboard = lCase( replace( rc.auth.role.name, ' ', '-', 'all' ));
         framework.setView( '.dashboard-' & dashboard );
         return;
         break;

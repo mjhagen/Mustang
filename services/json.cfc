@@ -12,6 +12,8 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
+
+  @version 2.0 2016 Scripted by @mjhagen
  */
 component {
   this.deserializeJSON  = deserializeFromJSON;
@@ -311,9 +313,11 @@ component {
     } else if( isArray( _data )) {
       dJSONString = [];
 
-      for( var i=1; i<=arrayLen( _data ); i++ ) {
-        var tempVal = serializeToJSON( _data[i], serializeQueryByColumns, strictMapping );
-        arrayAppend( dJSONString, tempVal );
+      for( var _dataEl in _data ) {
+        if( !isNull( _dataEl )) {
+          var tempVal = serializeToJSON( _dataEl, serializeQueryByColumns, strictMapping );
+          arrayAppend( dJSONString, tempVal );
+        }
       }
 
       return "[" & arrayToList( dJSONString, "," ) & "]";
