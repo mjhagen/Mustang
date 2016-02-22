@@ -226,16 +226,23 @@ component accessors=true {
 
   // POST (new)
   public void function create( required struct rc ) {
+    var payload = toString( GetHttpRequestData().content );
+
     if( structKeyExists( form, "batch" )) {
       if( isJSON( form.batch )) {
         form.batch = deserializeJSON( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
+    } else if( isJson( payload ) ){
+      form.batch = [ deserializeJSON( payload ) ];
     } else {
-      form.batch = [
-        duplicate( form )
-      ];
+      form.batch= [];
+      for( keyVal in listToArray( payload, "&" )){
+        var key = urlDecode( listFirst( keyVal, "=" ));
+        var val = urlDecode( listRest( keyVal, "=" ));
+        form.batch[1][key] = val;
+      }
     }
 
     var result = {
