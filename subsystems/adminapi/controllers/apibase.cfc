@@ -4,7 +4,8 @@ component {
     variables.fw = fw;
 
     request.layout = false;
-    request.util.setCFSetting( "showdebugoutput", false );
+
+    request.context.util.setCFSetting( "showdebugoutput", false );
 
     return this;
   }

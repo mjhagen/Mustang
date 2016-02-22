@@ -1,159 +1,233 @@
-component extends="apibase"{
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function before(){
-    var action = fw.getItem();
+component accessors=true {
+  property framework;
+  property jsonService;
+  property dataService;
 
-    writeLog( file=request.appName & "-API", text="#action# by #cgi.remote_addr#" );
+  property type="numeric" name="maxResults" default=25;
+  property type="numeric" name="offset" default=0;
+  property type="numeric" name="maxLevel" default=0;
 
-    if( action eq "info" ){
+  variables.supportedVerbs = "GET,POST,PUT,DELETE";
+  variables.ormEntities = [];
+
+  public component function init() {
+    var ormSessionFactory = ormGetSessionFactory();
+    variables.ormEntities = structKeyArray( ormSessionFactory.getAllClassMetadata());
+
+    return this;
+  }
+
+  // setup and security
+  public void function before( required struct rc ) {
+    var item = framework.getItem();
+    var section = framework.getSection();
+
+    variables.entityName = listLast( section, '.' );
+    variables.timer = getTickCount();
+
+    if( arrayFindNoCase( variables.ormEntities, variables.entityName ) == 0 ) {
+      return;
+    }
+
+    variables.entity = entityNew( variables.entityName );
+    variables.props = variables.entity.getInheritedProperties();
+    variables.where = { "deleted" = false };
+
+
+    if( structKeyExists( rc, "id" )) {
+      variables.where["id"] = rc.id;
+    }
+
+    if( item == "info" ) {
       return;
     }
 
     var privilegeMapping = {
       "default" = "view",
+      "filter"  = "view",
+      "search"  = "view",
       "show"    = "view",
       "create"  = "create",
       "update"  = "change",
       "destroy" = "delete"
     };
 
-    if( structKeyExists( rc, "id" )){
-      variables.where["id"] = rc.id;
+    writeLog( file="#request.appName#_API", text="#privilegeMapping[item]# #item# by #cgi.remote_addr#" );
+
+    if( !rc.auth.role.can( privilegeMapping[item], variables.entityName )) {
+      framework.renderData( "rawjson", jsonService.serialize({ "status" = "not-allowed" }), 405 );
+      return;
     }
 
-    if( !request.auth.role.can( privilegeMapping[action], variables.entityName )){
-      return returnAsJSON({ "status" = "not-allowed" }); // STOP!
-    }
+    param numeric rc.maxResults=25;
+    param numeric rc.offset=0;
+    param numeric rc.maxLevel=0;
+
+    setMaxResults( rc.maxResults );
+    setOffset( rc.offset );
+    setMaxLevel( rc.maxLevel );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // utility debug method, can be removed later
-  public string function info( Struct rc ){
-    return returnAsJSON({ "status" = "ok", "data" = getMetaData( createObject( "root.model.#variables.entityName#" ))});
-  }
+  // GET (list, search)
+  public void function default( required struct rc ) {
+    param string rc.filterType = "";
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // GET
-  public string function default( Struct rc ){
-    param rc.maxResults = 25;
-    param rc.offset = 0;
-    param rc.orderby = "";
-    param rc.parameters = {};
-
-    rc.parameters["cacheable"] = !request.reset;
-    rc.parameters["maxResults"] = min( 10000, rc.maxResults );
-    rc.parameters["offset"] = rc.offset;
+    var filterType = rc.filterType;
+    var querySetings = {
+      "cacheable" = rc.config.appIsLive,
+      "maxResults" = min( 10000, getMaxResults() ),
+      "offset" = getOffset()
+    };
 
     structDelete( url, "cacheable" );
+    structDelete( url, "filterType" );
     structDelete( url, "maxResults" );
     structDelete( url, "offset" );
 
-    for( var key in url ){
-      variables.where[key] = url[key];
-    }
-
-    var entity = entityNew( variables.entityName );
-    var entityMeta = getMetaData( entity );
-    var customProps = {};
-
-    for( var key in variables.where ){
-      if( not entity.hasProperty( key )){
-        customProps[key] = variables.where[key];
-        structDelete( variables.where, key );
+    for( var key in url ) {
+      if( variables.entity.hasProperty( key )) {
+        variables.where[key] = url[key];
       }
     }
 
-    // search JSON fields:
-    if( structCount( customProps )){
-      var allProps = entity.getInheritedProperties();
-      var jsonProps = structFindValue({ struct = allProps }, "json" );
-      var jsonFields = [];
+    var useAF = false;
+    var afCounter = 0;
+    var afAlias = "";
+    var afWhere = "";
 
-      for( var jsonProp in jsonProps ){
-        arrayAppend( jsonFields, jsonProp.owner.name );
+    var HQLSelect = " SELECT e ";
+    var HQLFrom   = " FROM #variables.entityName# e ";
+    var HQLWhere  = " WHERE 0 = 0 ";
+    var HQLOrder  = "";
+
+    if( structKeyExists( variables.props, "sortorder" ) || structKeyExists( variables.props, "name" )) {
+      HQLOrder = " ORDER BY ";
+      if( structKeyExists( variables.props, "sortorder" )) {
+        HQLOrder &= " e.sortorder, ";
       }
+      if( structKeyExists( variables.props, "name" )) {
+        HQLOrder &= " e.name, ";
+      }
+      HQLOrder = " " & listChangeDelims( trim( HQLOrder ), "," );
+    }
 
-      if( arrayLen( jsonFields )){
-        var tableName = variables.entityName;
-
-        if( structKeyExists( entityMeta, "table" )){
-          tableName = entityMeta.table;
+    for( var key in variables.where ) {
+      if( isSimpleValue( variables.where[key] )) {
+        // NULL:
+        if( variables.where[key] == "NULL" ) {
+          HQLWhere &= " AND e.#key# IS NULL";
+          structDelete( variables.where, key );
+          continue;
         }
 
-        var SQLText = 'SELECT id FROM "#tableName#" WHERE 0 = 0 ';
-
-        for( var jsonField in jsonFields ){
-          for( var key in customProps ){
-            // TODO: treat numbers as numbers, for now it's text only
-            SQLText &= " AND CAST( #jsonField# AS jsonb ) ->> '#key#' = '#customProps[key]#'";
+        // OBJECT IDs:
+        if( structKeyExists( props[key], "cfc" )) {
+          if( props[key].fieldType contains "to-many" ) {
+            HQLFrom &= " JOIN e.#props[key].name# _#key# ";
+            HQLWhere &= " AND _#key#.id IN ( :#key# ) ";
+            variables.where[key] = listToArray( variables.where[key] );
+            continue;
+          } else {
+            HQLFrom &= " JOIN e.#props[key].name# _#key# ";
+            HQLWhere &= " AND _#key#.id = :#key# ";
+            continue;
           }
         }
 
-        var jsonParamResult = queryExecute( SQLText );
-      }
-    }
+        // WILDCARD:
+        if( structKeyExists( props[key], "searchable" )) {
+          afAlias = "";
+          afWhere = "";
+          useAF = false;
 
-    var HQLText = "FROM #variables.entityName# e WHERE 0 = 0";
+          if( structKeyExists( props[key], "alsoFilter" ) && len( trim( props[key].alsoFilter ))) {
+            useAF = true;
+            afCounter++;
 
-    if( structCount( variables.where )){
-      for( var key in variables.where ){
-        if( isSimpleValue( variables.where[key] ) and variables.where[key] eq "NULL" ){
-          HQLText &= " AND #key# IS NULL";
-          structDelete( variables.where, key );
-        } else {
-          HQLText &= " AND #key# = :#key#";
+            var afTable = listFirst( props[key].alsoFilter, "." );
+            var afField = listLast( props[key].alsoFilter, "." );
+            afAlias = "_af_#afTable#_#afCounter#";
+            afWhere = "#afAlias#.#afField#";
+
+            HQLFrom &= " LEFT JOIN e.#afTable# #afAlias# ";
+          }
+
+          if( isDefined( "filterType" ) && len( trim( filterType ))) {
+            if( filterType == "contains" ) {
+              variables.where[key] = "%#variables.where[key]#";
+            }
+            variables.where[key] = "#variables.where[key]#%";
+
+            if( useAF && len( trim( afWhere ))) {
+              HQLWhere &= " AND ( e.#key# LIKE :#key# OR #afWhere# LIKE :#key# )";
+              continue;
+            }
+
+            HQLWhere &= " AND e.#key# LIKE :#key# ";
+          }
         }
       }
-    }
 
-    if( not isNull( jsonParamResult )){
-      if( jsonParamResult.recordCount ){
-        HQLText &= " AND e.id IN ( :ids )";
-        variables.where["ids"] = listToArray( valueList( jsonParamResult.id ));
-      } else {
-        // return 0 results when searching on JSON param, but nothing found:
-        HQLText &= " AND 0 = 1";
+      // DEFAULT:
+      if( useAF && len( trim( afWhere ))) {
+        HQLWhere &= " AND ( e.#key# = :#key# OR #afWhere# = :#key# )";
+        continue;
       }
+
+      HQLWhere &= " AND e.#key# = :#key# ";
     }
 
-    var data = ORMExecuteQuery( HQLText, variables.where, false, rc.parameters );
+    var HQLText = HQLSelect & HQLFrom & HQLWhere & HQLOrder;
+    var data = ORMExecuteQuery( HQLText, variables.where, false, querySetings );
 
+    var HQLTextForRecordCount = "SELECT COUNT( * ) " & HQLFrom & HQLWhere;
+    var recordCount = ORMExecuteQuery( HQLTextForRecordCount, variables.where, false, { "cacheable" = rc.config.appIsLive });
     var result = [];
-    for( var record in data ){
-      arrayAppend( result, processEntity( record ));
+
+    for( var record in data ) {
+      arrayAppend( result, dataService.processEntity( data = record, maxLevel = getMaxLevel() ));
     }
 
-    return returnAsJSON({
+    framework.renderData( "rawjson", jsonService.serialize({
       "status" = "ok",
-      "recordCount" = arrayLen( result ),
-      "maxResults" = rc.maxResults,
-      "offset" = rc.offset,
-      "data" = result
-    });
+      "recordCount" = recordCount[1],
+      "data" = result,
+      "_debug" = {
+        "hql" = HQLText,
+        "where" = variables.where,
+        "querySetings" = querySetings,
+        "timer" = ( getTickCount() - variables.timer )
+      }
+    }));
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // GET with ID
-  public string function show( Struct rc ){
+  // GET (detail)
+  public void function show( required struct rc ) {
     var record = entityLoad( variables.entityName, variables.where, true );
 
-    if( isNull( record )){
-      return returnAsJSON({
+    if( isNull( record )) {
+      framework.renderData( "rawjson", jsonService.serialize({
         "status" = "not-found"
-      });
+      }));
+      return;
     }
 
-    return returnAsJSON({
+    var result = dataService.processEntity( data = record, maxLevel = getMaxLevel() );
+
+    framework.renderData( "rawjson", jsonService.serialize({
       "status" = "ok",
-      "data" = processEntity( record )
-    });
+      "data" = result,
+      "_debug" = {
+        "where" = variables.where,
+        "timer" = ( getTickCount() - variables.timer )
+      }
+    }));
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // POST new
-  public string function create( Struct rc ){
-    if( structKeyExists( form, "batch" )){
-      if( isJSON( form.batch )){
+  // POST (new)
+  public void function create( required struct rc ) {
+    if( structKeyExists( form, "batch" )) {
+      if( isJSON( form.batch )) {
         form.batch = deserializeJSON( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
@@ -169,46 +243,39 @@ component extends="apibase"{
       "data" = []
     };
 
-    try{
-      transaction{
-        for( var objProperties in form.batch ){
-          structDelete( objProperties, "fieldnames" );
-          structDelete( objProperties, "batch" );
+    for( var objProperties in form.batch ) {
+      structDelete( objProperties, "fieldnames" );
+      structDelete( objProperties, "batch" );
 
-          var newObject = entityNew( variables.entityName );
-          entitySave( newObject );
-          newObject.save( objProperties );
+      var newObject = entityNew( variables.entityName );
+      entitySave( newObject );
+      newObject.init().save( objProperties );
 
-          arrayAppend( result.data, newObject );
-        }
-
-        transactionCommit();
-      }
-    } catch( Any e ){
-      result["error"] = e.message;
-      result["detail"] = e.detail;
+      arrayAppend( result.data, newObject );
     }
 
-    if( structKeyExists( result, "error" )){
-      result.status = "error";
-    }
-
-    return returnAsJSON( result );
+    framework.renderData( "rawjson", jsonService.serialize( result ), 201 );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // PUT change
-  public string function update( Struct rc ){
+  // PUT (change)
+  public void function update( required struct rc ) {
+    var payload = toString( GetHttpRequestData().content );
+
     if( structKeyExists( form, "batch" )){
       if( isJSON( form.batch )){
         form.batch = deserializeJSON( form.batch );
       } else {
         throw( "batch should be a JSON formatted array" );
       }
-    } else {
-      form.batch = [
-        duplicate( form )
-      ];
+    } else if( isJson( payload ) ){
+      form.batch = [ deserializeJSON( payload) ];
+    } else{
+      form.batch= [];
+      for( keyVal in listToArray( payload, "&" )){
+        var key = urlDecode( listFirst( keyVal, "=" ));
+        var val = urlDecode( listRest( keyVal, "=" ));
+        form.batch[1][key] = val;
+      }
     }
 
     var result = {
@@ -216,166 +283,110 @@ component extends="apibase"{
       "data" = []
     };
 
-    try{
-      transaction{
-        for( var objProperties in form.batch ){
-          structDelete( objProperties, "fieldnames" );
-          structDelete( objProperties, "batch" );
+    for( var objProperties in form.batch ) {
+      structDelete( objProperties, "fieldnames" );
+      structDelete( objProperties, "batch" );
 
-          var updateObject = entityLoad( variables.entityName, variables.where, true );
+      var updateObject = entityLoad( variables.entityName, variables.where, true );
 
-          if( isNull( updateObject )){
-            return returnAsJSON({
-              "status" = "not-found",
-              "where" = variables.where
-            });
-          }
-
-          var key = 0;
-          var val = 0;
-
-          for( keyVal in listToArray( getHttpRequestData().content, "&" )){
-            var key = urlDecode( listFirst( keyVal, "=" ));
-            var val = urlDecode( listRest( keyVal, "=" ));
-            objProperties[key] = val;
-          }
-
-          objProperties["#variables.entityName#ID"] = updateObject.getID();
-          updateObject.save( objProperties );
-          arrayAppend( result.data, updateObject );
-        }
-
-        transactionCommit();
+      if( isNull( updateObject )) {
+        framework.renderData( "rawjson", jsonService.serialize({
+          "status" = "not-found",
+          "where" = variables.where
+        }), 404 );
+        return;
       }
-    } catch( Any e ){
-      result["error"] = e.message;
-      result["detail"] = e.detail;
+
+      updateObject.init();
+      objProperties["#variables.entityName#ID"] = updateObject.getID();
+      updateObject.save( objProperties );
+      arrayAppend( result.data, updateObject );
     }
 
-    if( structKeyExists( result, "error" )){
-      result.status = "error";
-    }
-
-    return returnAsJSON( result );
+    framework.renderData( "rawjson", jsonService.serialize( result ), 200 );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // DELETE
-  /**
-  * Marks an object as deleted
-  * @return HTTP 204 OK, or
-  * @return HTTP 404 Not found
-  */
-  public string function destroy( Struct rc ){
-    transaction{
-      var data = entityLoad( variables.entityName, variables.where, true );
+  public void function destroy( required struct rc ) {
+    var data = entityLoad( variables.entityName, variables.where, true );
 
-      if( isNull( data )){
-        return returnAsJSON({
-          "status" = "not-found"
-        });
-      }
-
-      data.save({
-        "#variables.entityName#ID" = data.getID(),
-        "deleted" = true
-      });
-
-      transactionCommit();
+    if( isNull( data )) {
+      framework.renderData( "rawjson", jsonService.serialize({
+        "status" = "not-found"
+      }), 404 );
+      return;
     }
 
-    return returnAsJSON({
-      "status" = "no-content"
+    data.init();
+    data.save({
+      "#variables.entityName#ID" = data.getID(),
+      "deleted" = true
     });
+
+    framework.renderData( "rawjson", jsonService.serialize({
+      "status" = "no-content"
+    }), 204 );
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private struct function processEntity( entity ){
-    var props = entity.getInheritedProperties();
-    var result = {};
-
-    for( var key in props ){
-      var prop = props[key];
-
-      if( structKeyExists( prop, "inapi" ) and
-          isBoolean( prop.inapi ) and
-          not prop.inapi ){
-        continue;
-      }
-
-      var propVal = evaluate( "entity.get#prop.name#()" );
-
-      if( isNull( propVal )){
-        result[lCase( prop.name )] = "";
-        continue;
-      }
-
-      if( isArray( propVal )){
-        var propValArray = [];
-        for( var item in propVal ){
-          if( isObject( item )){
-            arrayAppend( propValArray, getBasics( item ));
-          } else if( isSimpleValue( item )){
-            if( isJSON( item )){
-              arrayAppend( propValArray, deserializeJSON( item ));
-            } else {
-              arrayAppend( propValArray, item );
-            }
-          }
-       }
-
-        result[lCase( prop.name )] = propValArray;
-      } else if( isObject( propVal )){
-        result[lCase( prop.name )] = getBasics( propVal );
-      } else {
-        result[lCase( prop.name )] = propVal;
-      }
-    }
-
-    var jsonProps = structFindValue( props, "json" );
-
-    for( var jsonProp in jsonProps ){
-      if( jsonProp.path contains '.datatype' ){
-        var jsonField = jsonProp.owner.name;
-
-        if( structKeyExists( result, jsonField ) and isJSON( result[jsonField] )){
-          structAppend( result, deserializeJSON( result[jsonField] ));
-          structDelete( result, jsonField );
-        }
-      }
-    }
-
-    return result;
+  // INFO
+  public void function info( required struct rc ) {
+    framework.renderData( "rawjson", jsonService.serialize({
+      "status" = "ok",
+      "data" = getMetaData( createObject( "root.model.#variables.entityName#" ))
+    }));
   }
 
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private struct function getBasics( entity ){
-    var itemProps = entity.getInheritedProperties();
-    var itemBasics = {};
+  // public void function error( required struct rc ) {
+  //   writeDump( rc );abort;
+  // }
 
-    for( var key in itemProps ){
-      var itemProp = itemProps[key];
-
-      if( structKeyExists( itemProp, "fieldType" ) and not listFind( "column,id", itemProp.fieldType )){
-        continue;
-      }
-
-      itemBasics[key] = evaluate( "entity.get#itemProp.name#()" );
+  // CATCH ALL HANDLER:
+  public void function onMissingMethod( string missingMethodName, struct missingMethodArguments ) {
+    if( listFindNoCase( "after", missingMethodName )) {
+      return; // skip framework functions
     }
 
-    var jsonProps = structFindValue( itemProps, "json" );
+    var rc = missingMethodArguments.rc;
+    var customArgs = {};
+    structAppend( customArgs, url, true );
+    structAppend( customArgs, form, true );
 
-    for( var jsonProp in jsonProps ){
-      if( jsonProp.path contains '.datatype' ){
-        var jsonField = jsonProp.owner.name;
+    if( arrayFindNoCase( variables.ormEntities, variables.entityName ) > 0 ) {
+      var service = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
 
-        if( structKeyExists( itemBasics, jsonField ) and isJSON( itemBasics[jsonField] )){
-          structAppend( itemBasics, deserializeJSON( itemBasics[jsonField] ));
-          structDelete( itemBasics, jsonField );
-        }
+      param string rc.filterType = "";
+      param string rc.keywords = "";
+
+      structAppend( customArgs, {
+        maxResults = min( 10000, getMaxResults()),
+        offset = getOffset(),
+        filterType = rc.filterType,
+        keywords = rc.keywords,
+        cacheable = rc.config.appIsLive
+      }, true );
+
+      var executedMethod = evaluate( "service.#missingMethodName#(argumentCollection=customArgs)" );
+      var result = [];
+
+      for( var object in executedMethod ) {
+        arrayAppend( result, dataService.processEntity( data = object, maxLevel = getMaxLevel()));
+      }
+
+      var debugInfo = service.getDebugInfo();
+      debugInfo["timer"] = getTickCount() - variables.timer;
+
+      framework.renderData( "rawjson", jsonService.serialize({
+        "status" = "ok",
+        "recordCount" = service.getRecordCount(),
+        "data" = result,
+        "_debug" = debugInfo
+      }));
+    } else {
+      var service = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
+      var executedMethod = evaluate( "service.#missingMethodName#(argumentCollection=customArgs)" );
+      if( !isNull( executedMethod )) {
+        framework.renderData( "rawjson", jsonService.serialize( executedMethod ));
       }
     }
-
-    return itemBasics;
   }
 }

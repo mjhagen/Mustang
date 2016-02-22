@@ -17,7 +17,7 @@
             structKeyExists( local.properties[rc.propertyName], "requirement" )>
         <cfset local.requirement = local.properties[rc.propertyName].requirement />
 
-        <cfset result.message = request.i18n.translate( rc.entityName & '-' & rc.propertyName & '-' & local.requirement & '-message' ) />
+        <cfset result.message = rc.i18n.translate( rc.entityName & '-' & rc.propertyName & '-' & local.requirement & '-message' ) />
 
         <cfswitch expression="#local.requirement#">
           <cfcase value="unique">

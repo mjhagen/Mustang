@@ -24,9 +24,9 @@ component extends="apibase"
         "attr" = {
           "id" = item.getID(),
           "hasChildren" = item.hasChild(),
-          "data-editurl" = fw.buildURL( "#rc.entity#.edit?#rc.entity#id=#item.getID()#" ),
-          "data-addurl" = fw.buildURL( "#rc.entity#.new?parent=#item.getID()#" ),
-          "data-removeurl" = fw.buildURL( "#rc.entity#.delete?#rc.entity#id=#item.getID()#" )
+          "data-editurl" = fw.buildURL( ":#rc.entity#.edit?#rc.entity#id=#item.getID()#" ),
+          "data-addurl" = fw.buildURL( ":#rc.entity#.new?parent=#item.getID()#" ),
+          "data-removeurl" = fw.buildURL( ":#rc.entity#.delete?#rc.entity#id=#item.getID()#" )
         }
       });
     }
