@@ -1,10 +1,14 @@
 component extends="basecfc.base"
           persistent=true
           schema="mustang" {
+  property name="name" type="string" length=128 inlist=true;
+  property name="deleted" type="boolean" ORMType="boolean" default=false inapi=false;
+  property name="sortorder" type="numeric" ORMType="integer" default=0;
+
   property name="language" fieldType="many-to-one" cfc="root.model.language" FKColumn="languageid" inform=true editable=true;
   property name="country" fieldType="many-to-one" cfc="root.model.country" FKColumn="countryid" inform=true editable=true;
   property name="texts" fieldType="one-to-many" cfc="root.model.text" FKColumn="localeid" singularName="text";
-  property name="name" persistent=false inlist=true;
+
   property name="code" persistent=false inlist=true;
 
   public string function getName(){

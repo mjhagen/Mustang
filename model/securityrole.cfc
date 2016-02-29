@@ -1,13 +1,16 @@
 component extends="basecfc.base"
           persistent=true
           schema="mustang" {
+  property name="name" type="string" length=128 inform=true orderinform=1 editable=true inlist=true;
+  property name="deleted" type="boolean" ORMType="boolean" default=false inapi=false;
+  property name="sortorder" type="numeric" ORMType="integer" default=0;
+
   property name="menulist" length=256 inform=true orderinform=2 editable=true;
   property name="loginscript" length=128 inform=true orderinform=3 editable=true inlist=true;
 
   property name="contacts" fieldtype="one-to-many" singularName="contact" cfc="root.model.contact" FKColumn="securityroleid" cascade="delete-orphan";
   property name="permissions" fieldtype="one-to-many" singularName="permission" cfc="root.model.permission" FKColumn="securityroleid" orderby="section" inform=true orderinform=4 editable=true inlineedit=true;
 
-  property persistent=false name="name" inform=true orderinform=1 editable=true inlist=true;
   property persistent=false name="canAccessAdmin" inlist=true;
 
   public boolean function getCanAccessAdmin(){

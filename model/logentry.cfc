@@ -4,6 +4,10 @@ component extends="basecfc.base"
           schema="mustang"
           defaultSort="dd DESC"
           classColumn="logaction" {
+  property name="name" type="string" length=128;
+  property name="deleted" type="boolean" ORMType="boolean" default=false inapi=false;
+  property name="sortorder" type="numeric" ORMType="integer" default=0;
+
   property name="relatedEntity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inform=true orderinform=1 inlist=1;
   property name="logaction" fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid" inform=true orderinform=2 inlist=1;
   property name="savedState" length=4000 dataType="json" inform=true orderinform=5;
