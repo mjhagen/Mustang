@@ -42,7 +42,7 @@ component extends="framework.one" {
     DBCreate = ( live ? ( request.reset ? "update" : "none" ) : ( request.reset ? "dropcreate" : "update" )),
     logSQL = live ? false : true,
     SQLScript = cfg.nukescript,
-    saveMapping = true,
+    // saveMapping = true,
     secondaryCacheEnabled = live ? true : false,
     cacheProvider = "ehcache"
   };
@@ -55,7 +55,7 @@ component extends="framework.one" {
     error = ":app.error",
     baseURL = cfg.webroot,
     unhandledPaths = "/inc,/tests,/browser,/cfimage,/diagram",
-    diLocations = "/root/services,/root/subsystems/api/services",
+    diLocations = "/mustang/services,/root/services,/root/subsystems/api/services",
     diConfig = {
       constants = {
         root = request.root,
@@ -177,7 +177,7 @@ component extends="framework.one" {
   }
 
   public void function onError( any exception, string event ) {
-    if( getSubsystem() == "api" ) {
+    if( structKeyExists( request, "action" ) && getSubsystem() == "api" ) {
       if( structKeyExists( exception, "cause" )) {
         return onError( exception.cause, event );
       }

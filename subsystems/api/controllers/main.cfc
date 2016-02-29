@@ -22,7 +22,7 @@ component accessors=true {
     var item = framework.getItem();
     var section = framework.getSection();
 
-    variables.entityName = listLast( section, '.' );
+    variables.entityName = listLast( section, '.-/\' );
     variables.timer = getTickCount();
 
     if( arrayFindNoCase( variables.ormEntities, variables.entityName ) == 0 ) {
