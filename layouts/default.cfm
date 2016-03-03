@@ -1,5 +1,4 @@
 <cfoutput>
-  #view("elements/html-header")#
   <div class="container">
     <cfif rc.auth.isLoggedIn>
       <div class="row">#view("elements/topnav")#</div>
@@ -9,5 +8,4 @@
       #body#
     </cfif>
   </div>
-  #view("elements/html-footer")#
 </cfoutput>

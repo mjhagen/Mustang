@@ -7,7 +7,7 @@ component extends="framework.one" {
   // CF application setup:
   this.sessionmanagement = true;
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
-  this.mappings["/root"] = request.root = listChangeDelims( getDirectoryFromPath( getCurrentTemplatePath()), "/", "/\" );
+  this.mappings["/root"] = request.root = getDirectoryFromPath( getCurrentTemplatePath());
 
   // Global variables:
   request.appName = "Mustang";
