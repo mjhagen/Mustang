@@ -1,3 +1,1 @@
-<cfoutput>
-  <div class="login-page">#body#</div>
-</cfoutput>
+<cfoutput><div class="login-page">#body#</div></cfoutput>

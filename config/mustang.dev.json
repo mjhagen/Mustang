@@ -1,5 +1,10 @@
 {
   "debugIP" : "127.0.0.1",
   "appIsLive" : false,
-  "showDebug" : true
+  "showDebug" : true,
+  "datasource" : "mustang",
+  "paths" : {
+    "model" : "C:/Users/mjhagen/Dropbox/Projects/Mustang/model"
+  },
+  "nukescript" : "populate.sql"
 }

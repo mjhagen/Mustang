@@ -233,9 +233,11 @@ component extends="framework.one" {
       "encryptKey"              = "7Wp8Zwz2ccvvtbxZWkvKm32a3v9edes8Y3xxHxeAaMuZkjV84P2uW6s3m3Mj9sMz",
       "log"                     = true,
       "lognotes"                = false,
-      "nukescript"              = "",
+      "nukescript"              = "populate.sql",
       "ownerEmail"              = "info@mstng.info",
-      "paths" = { "fileUploads" = "#request.root#/../ProjectsTemporaryFiles/files_" & request.appName },
+      "paths" = { 
+        "fileUploads" = "#request.root#/../ProjectsTemporaryFiles/files_" & request.appName 
+      },
       "reloadpw"                = "1",
       "secureDefaultSubsystem"  = true,
       "securedSubsystems"       = "adminapi,api",
