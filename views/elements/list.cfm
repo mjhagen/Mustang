@@ -75,7 +75,7 @@
           <cfif (
             listLast( local.action, "." ) eq "edit" or
             listLast( local.action, "." ) eq "new"
-          ) and rc.auth.role.can( "change", getSection())>
+          ) and getBeanFactory().getBean( "securityService" ).can( "change", getSection())>
             <cfset local.allowedActions = listAppend( local.allowedActions, local.action ) />
           </cfif>
         </cfloop>

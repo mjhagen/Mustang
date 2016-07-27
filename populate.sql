@@ -1,3 +1,5 @@
+-- CREATE SCHEMA IF NOT EXISTS mustang AUTHORIZATION postgres;
+
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, cssclass ) VALUES ( '163e8056-0fd7-4e7d-a9ab-c8b6010fdf8b', 'f', 'logaction', 'created',  'success' );
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, cssclass ) VALUES ( '1e170597-7890-425f-ac31-b5c60285989c', 'f', 'logaction', 'changed',  'default' );
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, cssclass ) VALUES ( '249b01ed-d0ba-4cbc-ade5-a29b5e2d649f', 'f', 'logaction', 'restored', 'warning' );

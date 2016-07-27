@@ -51,6 +51,7 @@ component extends="framework.one" {
   framework = {
     generateSES = true,
     SESOmitIndex = true,
+    enableJSONPOST = true,
     base = "/root",
     error = ":app.error",
     baseURL = cfg.webroot,
@@ -220,32 +221,7 @@ component extends="framework.one" {
   }
 
   private struct function getConfig( string site=cgi.server_name ) {
-    // DEFAULT:
-    var defaultSettings = {
-      "appIsLive"               = true,
-      "cfAdminPassword"         = "",
-      "contentSubsystems"       = "",
-      "datasource"              = "",
-      "debugEmail"              = "bugs@mstng.info",
-      "debugIP"                 = "127.0.0.1",
-      "defaultLanguage"         = "en_US",
-      "disableSecurity"         = false,
-      "encryptKey"              = "7Wp8Zwz2ccvvtbxZWkvKm32a3v9edes8Y3xxHxeAaMuZkjV84P2uW6s3m3Mj9sMz",
-      "log"                     = true,
-      "lognotes"                = false,
-      "nukescript"              = "populate.sql",
-      "ownerEmail"              = "info@mstng.info",
-      "paths" = { 
-        "fileUploads" = "#request.root#/../ProjectsTemporaryFiles/files_" & request.appName 
-      },
-      "reloadpw"                = "1",
-      "secureDefaultSubsystem"  = true,
-      "securedSubsystems"       = "adminapi,api",
-      "showDebug"               = false,
-      "webroot"                 = ""
-    };
-
-    // try cache:
+    // cached:
     if( !structKeyExists( url, "reload" )) {
       var config = cacheGet( "config-#this.name#" );
 
@@ -258,16 +234,24 @@ component extends="framework.one" {
       }
     }
 
-    // read from config file:
-    var config = deserializeJSON( fileRead( request.root & "/config/" & site & ".json" ));
+    // not cached:
+    var computedSettings = {
+      "webroot" = ( cgi.https == 'on' ? 'https' : 'http' ) & "://" & cgi.server_name
+    };
 
-    // add default options:
-    structAppend( defaultSettings, config, true );
+    var defaultSettings = {};
 
-    // store it in cf's default cache:
-    cachePut( "config-#this.name#", defaultSettings );
+    if( fileExists( request.root & "/config/default.json" )) {
+      var defaultConfig = deserializeJSON( fileRead( request.root & "/config/default.json" ));
+      defaultSettings = mergeStructs( defaultConfig, computedSettings );
+    }
 
-    return defaultSettings;
+    var siteConfig = deserializeJSON( fileRead( request.root & "/config/" & site & ".json" ));
+    var mergedConfig = mergeStructs( siteConfig, defaultSettings );
+
+    cachePut( "config-#this.name#", mergedConfig );
+
+    return mergedConfig;
   }
 
   private array function getRoutes() {
@@ -294,5 +278,19 @@ component extends="framework.one" {
     }
 
     return resources;
+  }
+
+  private struct function mergeStructs( required struct from, struct to={}) {
+    // also append nested struct keys:
+    for( var key in to ) {
+      if( isStruct( to[key] ) && structKeyExists( from, key )) {
+        structAppend( to[key], from[key] );
+      }
+    }
+
+    // copy the other keys:
+    structAppend( to, from );
+
+    return to;
   }
 }

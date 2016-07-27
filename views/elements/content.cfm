@@ -16,7 +16,7 @@
   <cfset local.headerTitle &= ' <small>#rc.content.getSubTitle()#</small>' />
 </cfif>
 
-<cfif rc.auth.isLoggedIn and rc.auth.role.can( "change", "content" )>
+<cfif rc.auth.isLoggedIn and getBeanFactory().getBean( "securityService" ).can( "change", "content" )>
   <cfset local.editContentLink = buildURL(
     action = ":content.edit",
     querystring = {

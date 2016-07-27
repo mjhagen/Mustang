@@ -1,0 +1,20 @@
+{
+  "appIsLive": true,
+  "cfAdminPassword": "",
+  "contentSubsystems": "",
+  "datasource": "",
+  "debugEmail": "bugs@mstng.info",
+  "debugIP": "127.0.0.1",
+  "defaultLanguage": "nl_NL",
+  "disableSecurity": false,
+  "encryptKey": "d89FZ4xkRyay3gN7tjj6BDJdECzJG9XRazuCc4rmQbmYyX29xLYJGcULMd6c4yUY",
+  "log": true,
+  "lognotes": false,
+  "nukescript": "populate.sql",
+  "ownerEmail": "administrator@e-line.nl",
+  "paths": {},
+  "reloadpw": "1",
+  "secureDefaultSubsystem": true,
+  "securedSubsystems": "",
+  "showDebug": false
+}

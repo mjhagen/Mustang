@@ -2,15 +2,24 @@ component accessors=true {
   property framework;
   property jsonService;
   property dataService;
+  property utilityService;
+  property jsonJavaService;
+  property securityService;
 
+  property type="boolean" name="basicsOnly" default=false;
+  property type="numeric" name="maxLevel" default=0;
   property type="numeric" name="maxResults" default=25;
   property type="numeric" name="offset" default=0;
-  property type="numeric" name="maxLevel" default=0;
 
   variables.supportedVerbs = "GET,POST,PUT,DELETE";
   variables.ormEntities = [];
 
   public component function init() {
+    variables.basicsOnly=false;
+    variables.maxLevel=0;
+    variables.maxResults=25;
+    variables.offset=0;
+
     var ormSessionFactory = ormGetSessionFactory();
     variables.ormEntities = structKeyArray( ormSessionFactory.getAllClassMetadata());
 
@@ -54,7 +63,7 @@ component accessors=true {
 
     writeLog( file="#request.appName#_API", text="#privilegeMapping[item]# #item# by #cgi.remote_addr#" );
 
-    if( !rc.auth.role.can( privilegeMapping[item], variables.entityName )) {
+    if( !securityService.can( privilegeMapping[item], variables.entityName )) {
       framework.renderData( "rawjson", jsonService.serialize({ "status" = "not-allowed" }), 405 );
       return;
     }
@@ -62,27 +71,30 @@ component accessors=true {
     param numeric rc.maxResults=25;
     param numeric rc.offset=0;
     param numeric rc.maxLevel=0;
+    param boolean rc.basicsOnly=false;
 
-    setMaxResults( rc.maxResults );
-    setOffset( rc.offset );
-    setMaxLevel( rc.maxLevel );
+    variables.maxResults = rc.maxResults;
+    variables.offset = rc.offset;
+    variables.maxLevel = rc.maxLevel;
+    variables.basicsOnly = rc.basicsOnly;
   }
 
   // GET (list, search)
   public void function default( required struct rc ) {
-    param string rc.filterType = "";
+    param string rc.filterType="";
 
     var filterType = rc.filterType;
     var querySetings = {
       "cacheable" = rc.config.appIsLive,
-      "maxResults" = min( 10000, getMaxResults() ),
-      "offset" = getOffset()
+      "maxResults" = min( 10000, variables.maxResults ),
+      "offset" = variables.offset
     };
 
     structDelete( url, "cacheable" );
     structDelete( url, "filterType" );
     structDelete( url, "maxResults" );
     structDelete( url, "offset" );
+    structDelete( url, "basicsOnly" );
 
     for( var key in url ) {
       if( variables.entity.hasProperty( key )) {
@@ -185,7 +197,7 @@ component accessors=true {
     var result = [];
 
     for( var record in data ) {
-      arrayAppend( result, dataService.processEntity( data = record, maxLevel = getMaxLevel() ));
+      arrayAppend( result, dataService.processEntity( data=record, maxLevel=variables.maxLevel, basicsOnly=variables.basicsOnly ));
     }
 
     framework.renderData( "rawjson", jsonService.serialize({
@@ -203,7 +215,7 @@ component accessors=true {
 
   // GET (detail)
   public void function show( required struct rc ) {
-    var record = entityLoad( variables.entityName, variables.where, true );
+    var record = entityLoad( variables.entityName, variables.where, true ).init();
 
     if( isNull( record )) {
       framework.renderData( "rawjson", jsonService.serialize({
@@ -212,7 +224,7 @@ component accessors=true {
       return;
     }
 
-    var result = dataService.processEntity( data = record, maxLevel = getMaxLevel() );
+    var result = dataService.processEntity( data=record, maxLevel=variables.maxLevel, basicsOnly=variables.basicsOnly );
 
     framework.renderData( "rawjson", jsonService.serialize({
       "status" = "ok",
@@ -266,23 +278,8 @@ component accessors=true {
 
   // PUT (change)
   public void function update( required struct rc ) {
-    var payload = toString( GetHttpRequestData().content );
-
-    if( structKeyExists( form, "batch" )){
-      if( isJSON( form.batch )){
-        form.batch = jsonService.deserialize( form.batch );
-      } else {
-        throw( "batch should be a JSON formatted array" );
-      }
-    } else if( isJson( payload ) ){
-      form.batch = [ jsonService.deserialize( payload) ];
-    } else{
-      form.batch= [];
-      for( keyVal in listToArray( payload, "&" )){
-        var key = urlDecode( listFirst( keyVal, "=" ));
-        var val = urlDecode( listRest( keyVal, "=" ));
-        form.batch[1][key] = val;
-      }
+    if( !structKeyExists( rc, "batch" ) || !isArray( rc.batch )) {
+      rc.batch = [ duplicate( form )];
     }
 
     var result = {
@@ -290,11 +287,13 @@ component accessors=true {
       "data" = []
     };
 
-    for( var objProperties in form.batch ) {
-      structDelete( objProperties, "fieldnames" );
-      structDelete( objProperties, "batch" );
+    for( var formData in rc.batch ) {
+      structDelete( formData, "fieldnames" );
+      structDelete( formData, "batch" );
 
-      var updateObject = entityLoad( variables.entityName, variables.where, true );
+      var updateObject = entityLoad( variables.entityName, variables.where, true ).init();
+
+writeDump(updateObject);
 
       if( isNull( updateObject )) {
         framework.renderData( "rawjson", jsonService.serialize({
@@ -304,11 +303,15 @@ component accessors=true {
         return;
       }
 
-      updateObject.init();
-      objProperties["#variables.entityName#ID"] = updateObject.getID();
-      updateObject.save( objProperties );
+      formData[ "#variables.entityName#ID" ] = updateObject.getID();
+
+      transaction {
+        updateObject.save( formData );
+      }
+
       arrayAppend( result.data, updateObject );
     }
+
 
     framework.renderData( "rawjson", jsonService.serialize( result ), 200 );
   }
@@ -359,40 +362,43 @@ component accessors=true {
     structAppend( customArgs, form, true );
 
     if( arrayFindNoCase( variables.ormEntities, variables.entityName ) > 0 ) {
-      var service = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
+      var entityService = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
 
-      param string rc.filterType = "";
-      param string rc.keywords = "";
+      param string rc.filterType="";
+      param string rc.keywords="";
 
       structAppend( customArgs, {
-        maxResults = min( 10000, getMaxResults()),
-        offset = getOffset(),
+        maxResults = min( 10000, variables.maxResults ),
+        offset = variables.offset,
         filterType = rc.filterType,
         keywords = rc.keywords,
         cacheable = rc.config.appIsLive
       }, true );
 
-      var executedMethod = evaluate( "service.#missingMethodName#(argumentCollection=customArgs)" );
+      var executedMethod = utilityService.cfinvoke( entityService, missingMethodName, customArgs );
       var result = [];
 
       for( var object in executedMethod ) {
-        arrayAppend( result, dataService.processEntity( data = object, maxLevel = getMaxLevel()));
+        var processed = dataService.processEntity( data=object, maxLevel=variables.maxLevel, basicsOnly=variables.basicsOnly );
+        arrayAppend( result, processed );
       }
 
-      var debugInfo = service.getDebugInfo();
+      var debugInfo = entityService.getDebugInfo();
       debugInfo["timer"] = getTickCount() - variables.timer;
 
-      framework.renderData( "rawjson", jsonService.serialize({
+      var output = jsonJavaService.serialize({
         "status" = "ok",
-        "recordCount" = service.getRecordCount(),
+        "recordCount" = entityService.getRecordCount(),
         "data" = result,
         "_debug" = debugInfo
-      }));
+      });
+
+      framework.renderData( "rawjson", output );
     } else {
-      var service = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
-      var executedMethod = evaluate( "service.#missingMethodName#(argumentCollection=customArgs)" );
+      var entityService = framework.getBeanFactory().getBean( '#variables.entityName#Service' );
+      var executedMethod = utilityService.cfinvoke( entityService, missingMethodName, customArgs );
       if( !isNull( executedMethod )) {
-        framework.renderData( "rawjson", jsonService.serialize( executedMethod ));
+        framework.renderData( "rawjson", jsonJavaService.serialize( executedMethod ));
       }
     }
   }

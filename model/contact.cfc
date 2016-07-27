@@ -21,7 +21,7 @@ component extends="root.model.logged"
   property translationService;
 
   public string function getFullname(){
-    var result = variables.firstname & ' ' & trim( variables.infix & ' ' & variables.lastname );
+    var result = getFirstname() & ' ' & trim( getInfix() & ' ' & getLastname());
 
     if( not len( trim( result ))){
       result = translationService.translate( 'noname' );

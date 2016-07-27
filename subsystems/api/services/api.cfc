@@ -1,4 +1,5 @@
 component accessors=true {
+  property utilityService;
   property numeric recordCount;
   property string query;
   property struct debugInfo;
@@ -14,7 +15,7 @@ component accessors=true {
     var cacheable = false;
     var maxResults = 25;
     var offset = 0;
-
+    var basicsOnly = false;
     var customArgs = duplicate( local );
 
     structDelete( customArgs, "this" );
@@ -22,24 +23,24 @@ component accessors=true {
 
     structAppend( customArgs, missingMethodArguments, true );
 
-    setQuerySettings({
+    variables.querySettings = {
       "cacheable" = customArgs.cacheable,
       "maxResults" = customArgs.maxResults,
       "offset" = customArgs.offset
-    });
+    };
 
-    evaluate( "__#missingMethodName#(argumentCollection=customArgs)" );
+    utilityService.cfinvoke( this, "__#missingMethodName#", customArgs );
 
-    var result = ormExecuteQuery( getQuery(), getParams(), false, getQuerySettings());
+    var result = ormExecuteQuery( variables.query, variables.params, false, variables.querySettings );
 
     return result;
   }
 
   public struct function getDebugInfo() {
     return {
-      "hql" = getQuery(),
-      "settings" = getQuerySettings(),
-      "where" = getParams()
+      "hql" = variables.query,
+      "settings" = variables.querySettings,
+      "where" = variables.params
     };
   }
 }

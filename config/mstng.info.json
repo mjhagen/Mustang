@@ -1,1 +1,9 @@
-{}
+{
+  "appIsLive": false,
+  "disableSecurity": true,
+  "datasource": "mustang",
+  "paths": {
+    "fileUploads": "",
+    "bcrypt": "/sites/lib/bcrypt"
+  }
+}

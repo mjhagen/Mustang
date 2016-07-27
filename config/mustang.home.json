@@ -1,4 +1,11 @@
 {
-  "appIsLive" : false,
-  "disableSecurity" : false
+  "datasource": "mustang",
+  "appIsLive": false,
+  "showDebug": true,
+  "disableSecurity": true,
+  "paths": {
+    "bcrypt": "G:/Dropbox/Projects/thirdparty/bcrypt",
+    "fileUploads": "G:/Dropbox/Projects/ProjectsTemporaryFiles/files_mustang",
+    "model": "G:/Dropbox/Projects/mustang/model"
+  }
 }

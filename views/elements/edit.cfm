@@ -20,7 +20,7 @@
 </cfif>
 
 <cfoutput>
-  <cfif getItem() eq "view" and rc.auth.role.can( "change", local.entity )>
+  <cfif getItem() eq "view" and getBeanFactory().getBean( "securityService" ).can( "change", local.entity )>
     <a class="pull-right btn btn-primary" href="#buildURL( '.edit?#local.entity#id=#rc["#local.entity#id"]#' )#">#i18n.translate('edit')#</a>
   </cfif>
 
@@ -72,7 +72,7 @@
         <cfset local.i++ />
         <cfset local.sharedClass = "form-group" />
         <cfset local.editableCheck = false />
-        <cfif structKeyExists( local.column, "editable" ) and local.column.editable and local.editable and rc.auth.role.can( "change", local.entity )>
+        <cfif structKeyExists( local.column, "editable" ) and local.column.editable and local.editable and getBeanFactory().getBean( "securityService" ).can( "change", local.entity )>
           <cfset local.editableCheck = true />
         </cfif>
         <cfif not local.editableCheck>
