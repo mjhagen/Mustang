@@ -5,6 +5,7 @@
 <cfparam name="local.chooseLabel" default="choose" />
 <cfparam name="local.column" default="#{}#" />
 <cfparam name="local.column.name" default="" />
+<cfparam name="local.column.fieldtype" default="column" />
 
 <cfparam name="rc.modal" default="false" />
 
@@ -80,7 +81,14 @@
       </cfif>
 
       <div id="#local.column.name#_inlineedit" class="inlineedit">
-        <a class="btn btn-sm btn-primary inlineedit-modal-trigger" href="#buildURL( '.new?modal=1' & ( structKeyExists( rc, '#rc.entity#id' ) ? '&fk=#rc['#rc.entity#id']#' : '' ) & '&source=' & local.column.fkColumn )#" data-target="##modal-dialog" data-field="#structKeyExists( local.column, 'singularName' )?local.column.singularName:local.column.name#">#i18n.translate( 'add-#local.column.name#' )#</a>
+        <cfset local.modalEditUrl = local.column.entityName & '.new?modal=1&source=#local.column.fkColumn#' />
+        <cfif structKeyExists( rc, '#rc.entity#id' )>
+          <cfset local.modalEditUrl &= "&fk=#rc['#rc.entity#id']#" />
+        </cfif>
+        <a class="btn btn-sm btn-primary inlineedit-modal-trigger" href="#buildURL( local.modalEditUrl )#"
+          data-target="##modal-dialog"
+          data-field="#structKeyExists( local.column, 'singularName' )?local.column.singularName:local.column.name#"
+        >#i18n.translate( 'add-#local.column.name#' )#</a>
       </div>
     <cfelseif structKeyExists( local.column, "autocomplete" )>
       #view( 'form/edit/select', {
