@@ -1,1 +1,4 @@
-component extends="mustang.controllers.app" {}
+component accessors=true extends="mustang.controllers.app" {
+  property framework;
+  property securityService;
+}

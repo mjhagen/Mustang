@@ -10,7 +10,7 @@
   <cfsavecontent variable="local.formappend">
     <cfif rc.editable>
       <hr />
-      <div class="form-group">
+      <div class="form-group row">
         <label for="password" class="col-lg-3 control-label">#i18n.translate( local.passwordLabel )#</label>
         <div class="col-lg-9">
           <input type="text" name="password" class="form-control" placeholder="#i18n.translate( 'placeholder-password' )#" />

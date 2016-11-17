@@ -34,7 +34,7 @@
         </h4>
       </div>
       <div id="#local.collapseID#" class="panel-collapse collapse#!local.collapsed?' in':''#">
-        <div class="panel-body">#view( 'elements/recursive-checkbox', local.viewOptions )#</div>
+        <div class="panel-body">#view( 'form/edit/recursive-checkbox', local.viewOptions )#</div>
       </div>
     </cfoutput>
   <cfelseif local.firstLayer>

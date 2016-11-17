@@ -1,5 +1,4 @@
 <cfparam name="local.formprepend" default="" />
-<cfparam name="local.fieldOverride" default="" />
 
 <cfoutput>
   <cfif not rc.modal and rc.entity eq "logentry">
@@ -16,10 +15,10 @@
         <div class="clearfix"></div>
       </cfsavecontent>
     </cfif>
-    #view(':elements/edit',local)#
+    #view( ':elements/edit', { formprepend = local.formprepend } )#
   <cfelse>
     <cfset local.formprepend = "<p>#i18n.translate( 'enter-a-note' )#</p>" />
-    #view(':elements/modaledit',local)#
+    #view( ':elements/modaledit', { formprepend = local.formprepend } )#
   </cfif>
 
 </cfoutput>

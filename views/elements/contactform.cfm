@@ -12,7 +12,7 @@
 			<input type="hidden" name="contactID" value="#rc.contactID#">
 		</cfif>
 
-    <div class="form-group">
+    <div class="form-group row">
       <label class="col-sm-4 control-label">#request.i18n.translate( 'security-role' )#</label>
       <div class="col-sm-8">
         <select name="securityrole" class="form-control">
@@ -46,7 +46,7 @@
 
 	    <cfif ( local.fieldname neq "password" or (local.fieldname eq "password" and not isDefined("rc.contact")) ) and
 			      ( local.fieldname neq "username" or (local.fieldname eq "username" and not isDefined("rc.contact")) )>
-		    <div class="form-group">
+		    <div class="form-group row">
 		      <label class="col-sm-4 control-label">#request.i18n.translate( local.fieldname )#</label>
 		      <div class="col-sm-8">
 		      	<cfif local.fieldtype eq "file">

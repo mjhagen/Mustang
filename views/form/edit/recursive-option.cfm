@@ -11,7 +11,7 @@
     <cfset local.viewOptions = { options = local.option.getChildren(), selected = local.selected, hideChooseOption = true } />
 
     <cfif arrayLen( local.option.getChildren())>
-      <optgroup label="#local.option.getName()#">#view( "elements/recursive-option", local.viewOptions )#</optgroup>
+      <optgroup label="#local.option.getName()#">#view( "form/edit/recursive-option", local.viewOptions )#</optgroup>
     <cfelse>
       <option value="#local.option.getID()#"#local.selected eq local.option.getID()?' selected="selected"':''##local.option.getEnterFreeText()?' class="enterfreetext"':''#>#local.option.getName()#</option>
     </cfif>

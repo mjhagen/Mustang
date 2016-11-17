@@ -9,8 +9,11 @@ INSERT INTO "mustang"."option"        ( id, deleted, type, name, cssclass ) VALU
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, cssclass ) VALUES ( 'c67bb518-600a-42fa-8445-ae815778b4b7', 'f', 'logaction', 'saved',    'success' );
 
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, iso2 ) VALUES ( 'b4083d4d-e789-b82e-edf9-f6572e4d545f', 'f', 'country', 'United States', 'US' );
+INSERT INTO "mustang"."option" ( id, deleted, type, name, iso2 ) VALUES ( 'db7d8404-9a2e-0a53-b886-9ed6e08e4061', 'f', 'country', 'Nederland', 'NL' );
 INSERT INTO "mustang"."option"        ( id, deleted, type, name, iso2 ) VALUES ( '767f71b3-a78b-a302-5cba-587f2524c0d8', 'f', 'language', 'English', 'en' );
+INSERT INTO "mustang"."option" ( id, deleted, type, name, iso2 ) VALUES ( 'db7e77ab-93ea-5892-8a27-c19d0948a679', 'f', 'language', 'Nederlands', 'nl' );
 INSERT INTO "mustang"."locale"        ( id, countryid, languageid ) VALUES ( 'b561bea9-d004-968f-0661-b5f6b4ff2acb', 'b4083d4d-e789-b82e-edf9-f6572e4d545f', '767f71b3-a78b-a302-5cba-587f2524c0d8' );
+INSERT INTO "mustang"."locale" ( id, countryid, languageid ) VALUES ( 'db8621a2-bc18-d3ac-ae98-33c980bd4492', 'db7d8404-9a2e-0a53-b886-9ed6e08e4061', 'db7e77ab-93ea-5892-8a27-c19d0948a679' );
 
 INSERT INTO "mustang"."securityrole"  ( id, deleted, name, loginscript, menulist ) VALUES ( 'a4163666-f3b0-0d48-7aae-765738a65c61', 'f', 'Administrator', 'main.default', 'upload,vessel,contact,securityrole' );
 

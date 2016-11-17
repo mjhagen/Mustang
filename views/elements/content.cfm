@@ -9,14 +9,14 @@
 <cfif len( trim( rc.content.getTitle()))>
   <cfset local.headerTitle &= rc.content.getTitle() />
 <cfelseif getSection() eq "main" and rc.auth.isLoggedIn>
-  <cfset local.headerTitle &= '#rc.i18n.translate( 'welcome' )# #rc.auth.user.getFirstname()#' />
+  <cfset local.headerTitle &= '#rc.i18n.translate( 'welcome' )# #rc.auth.user.firstname#' />
 </cfif>
 
 <cfif len( trim( rc.content.getSubTitle()))>
   <cfset local.headerTitle &= ' <small>#rc.content.getSubTitle()#</small>' />
 </cfif>
 
-<cfif rc.auth.isLoggedIn and getBeanFactory().getBean( "securityService" ).can( "change", "content" )>
+<cfif rc.auth.isLoggedIn and rc.auth.role.can( "change", "content" )>
   <cfset local.editContentLink = buildURL(
     action = ":content.edit",
     querystring = {
@@ -27,18 +27,18 @@
 </cfif>
 
 <cfoutput>
-  <div class="row">
+  <div class="row content">
     <div class="col-lg-12">
-      <h1 class="page-header">#local.headerTitle#</h1>
-      <div class="hidden-xs">#view( "elements/breadcrumbs" )#</div>
+      <!--- <h1 class="page-header">#local.headerTitle#</h1> --->
+      <div class="hidden-xs">#view( ":elements/breadcrumbs" )#</div>
 
-      #view( "elements/alert" )#
+      #view( ":elements/alert" )#
 
       <cfif isDefined( "rc.content" ) and len( trim( rc.content.getBody()))>
         <p>#rc.content.getBody()#</p>
       </cfif>
+
+      #local.generatedBody#
     </div>
   </div>
-
-  #local.generatedBody#
 </cfoutput>

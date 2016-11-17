@@ -1,19 +1,12 @@
-component {
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  public any function init( fw ) {
-    variables.fw = fw;
+component accessors=true {
+  property utilityService;
 
+  public void function after( rc ) {
+    utilityService.setCFSetting( "showdebugoutput", false );
     request.layout = false;
-
-    request.context.util.setCFSetting( "showdebugoutput", false );
-
-    return this;
   }
 
-  public void function before( rc ){}
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  private String function returnAsJSON( Any variable ){
+  private String function returnAsJSON( Any variable ) {
     var statusCode = 200; // default
     var statusCodes = {
       "error"       = 500,

@@ -15,6 +15,7 @@
   "paths": {},
   "reloadpw": "1",
   "secureDefaultSubsystem": true,
-  "securedSubsystems": "",
-  "showDebug": false
+  "securedSubsystems": "adminapi,api",
+  "showDebug": false,
+  "root": "root"
 }

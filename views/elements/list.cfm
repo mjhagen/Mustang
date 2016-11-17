@@ -36,9 +36,9 @@
               <cfset key = local.searchField.name />
               <cfset local.searchField.saved = structKeyExists( rc, "filter_#key#" )?rc["filter_#key#"]:"" />
               <cfset param = { column = local.searchField, namePrepend = "filter_", allowBlank = true, chooseLabel = "all" } />
-              <div class="form-group">
+              <div class="form-group row">
                 <label for="search_#key#" class="col-sm-3 control-label">#i18n.translate( 'filter_' & key )#</label>
-                <div class="col-sm-6">#view( "elements/fieldedit", param )#</div>
+                <div class="col-sm-6">#view( "form/edit/field", param )#</div>
                 <cfif structKeyExists( local.searchField, "filterType" ) and len( trim( local.searchField.filterType ))>
                   <div class="col-sm-3">
                     <cfloop list="#local.searchField.filterType#" index="local.filterType">
@@ -49,7 +49,7 @@
               </div>
             </cfloop>
 
-            <div class="form-group">
+            <div class="form-group row">
               <div class="col-sm-offset-3 col-sm-9">
                 <div class="checkbox">
                   <label>
@@ -59,7 +59,7 @@
               </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group row">
               <div class="col-sm-offset-3 col-sm-6">
                 <button type="submit" class="btn btn-primary ladda-button" data-style="zoom-in"><span class="ladda-label"><i class="fa fa-search"></i> #i18n.translate('search')#</span></button>
               </div>
@@ -72,42 +72,30 @@
       <cfif rc.showNavbar and len( trim( rc.listactions ))>
         <cfset local.allowedActions = "" />
         <cfloop list="#rc.listactions#" index="local.action">
-          <cfif (
-            listLast( local.action, "." ) eq "edit" or
-            listLast( local.action, "." ) eq "new"
-          ) and getBeanFactory().getBean( "securityService" ).can( "change", getSection())>
+          <cfif rc.auth.role.can( "change", getSection())>
             <cfset local.allowedActions = listAppend( local.allowedActions, local.action ) />
           </cfif>
         </cfloop>
 
         <cfif len( trim( local.allowedActions ))>
-          <cfif structKeyExists( rc, "content" )>
-            <form action="javascript:void(0)" class="form-horizontal" role="form">
-              <div class="row">
-                <div class="form-group">
-                  <label class="col-sm-3 control-label">#rc.content.getActionsbox()#</label>
-                  <div class="col-sm-6">
-          </cfif>
-
-          <cfloop list="#local.allowedActions#" index="local.action">
-            <cfif left( local.action, 1 ) eq '.'>
-              <cfset local.action = "#getSubsystem()#:#getSection()##local.action#" />
-            </cfif>
-            <a class="btn btn-primary" href="#buildURL( local.action )#">#i18n.translate( 'btn-' & local.action )#</a>
-          </cfloop>
-
-          <cfif structKeyExists( rc, "content" )>
-                  </div>
-                </div>
-              </div>
-            </form>
-          </cfif>
+          <nav class="navbar navbar-light bg-faded">
+            <div class="btn-group">
+              <cfloop list="#local.allowedActions#" index="local.key">
+                <cfset local.action = local.key />
+                <cfif left( local.action, 1 ) eq '.'>
+                  <cfset local.action = "#getSubsystem()#:#getSection()##local.action#" />
+                </cfif>
+                <cfset local.icon = i18n.translate( label="fa-#local.key#", alternative="" ) />
+                <a class="btn btn-sm btn-primary" href="#buildURL( local.action )#"><cfif len( local.icon )><i class="fa #local.icon#"></i> </cfif>#i18n.translate( 'btn-' & local.action )#</a>
+              </cfloop>
+            </div>
+          </nav>
         </cfif>
       </cfif>
     </cfsavecontent>
 
     <cfif len( trim( local.list_header ))>
-      <div class="well#rc.showSearch?'':' well-sm'#">#local.list_header#</div>
+      #local.list_header#
     </cfif>
 
     <cfif rc.showAlphabet>
@@ -120,6 +108,7 @@
     </cfif>
 
     <cfif arrayLen( rc.alldata ) eq 0>
+      <div class="whitespace"></div>
       <div class="alert alert-warning">
         <p>#i18n.translate( 'no-results' )#</p>
       </div>
@@ -190,21 +179,23 @@
         <cfset local.nextQS = duplicate( local.queryString ) />
         <cfset local.nextQS["offset"] = local.nextOffset />
 
-        <ul class="pager">
-          <cfif rc.offset lte 0>
-            <li class="previous disabled"><a href="##">&larr; #i18n.translate( 'prev' )#</a></li>
-          <cfelse>
-            <li class="previous"><a href="#buildURL( action = getfullyqualifiedaction(), querystring = local.prevQS)#">&larr; #i18n.translate( 'prev' )#</a></li>
-          </cfif>
+        <div class="text-xs-center">
+          <ul class="pagination pagination-sm">
+            <cfif rc.offset lte 0>
+              <li class="page-item previous disabled"><a class="page-link" href="##">&larr; #i18n.translate( 'prev' )#</a></li>
+            <cfelse>
+              <li class="page-item previous"><a class="page-link" href="#buildURL( action = getfullyqualifiedaction(), querystring = local.prevQS)#">&larr; #i18n.translate( 'prev' )#</a></li>
+            </cfif>
 
-          <li>#rc.recordCounter# #i18n.translate( 'record' & ( rc.recordCounter eq 1?'':'s' ))#</li>
+            <li class="page-item"><span class="page-link">#rc.recordCounter# #i18n.translate( 'record' & ( rc.recordCounter eq 1?'':'s' ))#</span></li>
 
-          <cfif max( rc.offset, local.nextOffset ) gte rc.recordCounter>
-            <li class="next disabled"><a href="##">#i18n.translate( 'next' )# &rarr;</a></li>
-          <cfelse>
-            <li class="next"><a href="#buildURL( action = getfullyqualifiedaction(), querystring = local.nextQS)#">#i18n.translate( 'next' )# &rarr;</a></li>
-          </cfif>
-        </ul>
+            <cfif max( rc.offset, local.nextOffset ) gte rc.recordCounter>
+              <li class="page-item next disabled"><a class="page-link" href="##">#i18n.translate( 'next' )# &rarr;</a></li>
+            <cfelse>
+              <li class="page-item next"><a class="page-link" href="#buildURL( action = getfullyqualifiedaction(), querystring = local.nextQS)#">#i18n.translate( 'next' )# &rarr;</a></li>
+            </cfif>
+          </ul>
+        </div>
       </cfif>
     </cfif>
   </cfif>

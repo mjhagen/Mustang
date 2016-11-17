@@ -9,6 +9,10 @@ component extends="framework.one" {
   this.sessiontimeout = createTimeSpan( 0, 2, 0, 0 );
   this.mappings["/root"] = request.root = getDirectoryFromPath( getCurrentTemplatePath());
 
+  this.javaSettings = {
+    loadPaths = [ "./lib/java/gson-2.7.jar" ]
+  };
+
   // Global variables:
   request.appName = "Mustang";
   request.version = "1.0.0";
@@ -17,7 +21,11 @@ component extends="framework.one" {
   cleanXHTMLQueryString();
 
   // Config:
-  request.context.config = cfg = getConfig();
+  request.context.config = cfg = getConfig( );
+
+  if ( structKeyExists( cfg.paths, "basecfc" ) ) {
+    this.mappings[ "/basecfc" ] = cfg.paths.basecfc;
+  }
 
   // Reload:
   if( structKeyExists( url, "reload" ) && url.reload != cfg.reloadpw ) {
@@ -51,12 +59,12 @@ component extends="framework.one" {
   framework = {
     generateSES = true,
     SESOmitIndex = true,
-    enableJSONPOST = true,
+    decodeRequestBody = true,
     base = "/root",
-    error = ":app.error",
     baseURL = cfg.webroot,
+    error = "app.error",
     unhandledPaths = "/inc,/tests,/browser,/cfimage,/diagram",
-    diLocations = "/mustang/services,/root/services,/root/subsystems/api/services",
+    diLocations = "/mustang/services,/mustang/controllers,/root/services,/root/subsystems/api/services",
     diConfig = {
       constants = {
         root = request.root,
@@ -73,6 +81,11 @@ component extends="framework.one" {
       dev = {
         reloadApplicationOnEveryRequest = true,
         trace = cfg.showDebug
+      }
+    },
+    subsystems = {
+      api = {
+        error = "api:main.error"
       }
     }
   };
@@ -92,7 +105,8 @@ component extends="framework.one" {
     // empty caches:
     try {
       ORMEvictQueries();
-    } catch( any e ) {}
+    } catch ( any e ) {
+    }
 
     cacheRemove( arrayToList( cacheGetAllIds()));
 
@@ -121,12 +135,14 @@ component extends="framework.one" {
 
     // down for maintenance message to non dev users:
     if( downForMaintenance && !listFind( cfg.debugIP, cgi.remote_addr )) {
-      writeOutput( 'Geachte gebruiker,
+      writeOutput(
+        'Geachte gebruiker,
         <br /><br />
         Momenteel is deze applicatie niet beschikbaar in verband met onderhoud.<br />
         Onze excuses voor het ongemak.
         <!-- IP adres: #cgi.remote_addr# -->
-      ' );
+      '
+      );
       abort;
     }
 
@@ -149,6 +165,14 @@ component extends="framework.one" {
     // try to queue up api actions:
     if( getSubsystem() == "api" && !util.fileExistsUsingCache( request.root & "/subsystems/api/controllers/#getSection()#.cfc" )) {
       controller( "api:main.#getItem()#" );
+    }
+  }
+
+  public void function setupSubsystem( string subsystem = "" ) {
+    if( structKeyExists( framework.subsystems, subsystem ) ) {
+      var subsystemConfig = getSubsystemConfig( subsystem );
+      variables.framework = mergeStructs( subsystemConfig, framework );
+      structDelete( variables.framework.subsystems, subsystem );
     }
   }
 
@@ -176,34 +200,6 @@ component extends="framework.one" {
 
     return view( ":app/notfound" );
   }
-
-  public void function onError( any exception, string event ) {
-    if( structKeyExists( request, "action" ) && getSubsystem() == "api" ) {
-      if( structKeyExists( exception, "cause" )) {
-        return onError( exception.cause, event );
-      }
-
-      if( structKeyExists( exception, "message" ) && structKeyExists( exception, "detail" )) {
-        var jsonService = getBeanFactory().getBean( "jsonService" );
-        var pageContext = getPageContext();
-        var response = pageContext.getResponse();
-
-        response.setContentType( "application/json" );
-        response.setStatus( 500 );
-
-        writeOutput(jsonService.serialize({
-          "status" = "error",
-          "error" = "uncaught error: " & exception.message,
-          "detail" = exception.detail
-        }));
-        abort;
-      }
-    }
-
-    super.onError( argumentCollection = arguments );
-  }
-
-
 
   // private functions:
 
@@ -235,9 +231,7 @@ component extends="framework.one" {
     }
 
     // not cached:
-    var computedSettings = {
-      "webroot" = ( cgi.https == 'on' ? 'https' : 'http' ) & "://" & cgi.server_name
-    };
+    var computedSettings = { "webroot" = ( cgi.https == 'on' ? 'https' : 'http' ) & "://" & cgi.server_name };
 
     var defaultSettings = {};
 

@@ -3,7 +3,7 @@
     <h4>#i18n.translate('new-label')#:</h4>
 
     <form id="newlabel" class="form-inline">
-      <div class="form-group">
+      <div class="form-group row">
         <div class="">
           <select id="language" name="language" class="form-control">
             <cfloop array="#rc.allLanguages#" index="translationFile">
@@ -12,12 +12,12 @@
           </select>
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group row">
         <div class="">
           <input class="form-control" type="text" name="name" placeholder="#i18n.translate( 'placeholder-label' )#" />
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group row">
         <div class="">
           <input class="form-control" type="text" name="value" placeholder="#i18n.translate( 'placeholder-translation' )#" />
         </div>

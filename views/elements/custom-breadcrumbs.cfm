@@ -1,5 +1,5 @@
-<cfoutput>	
-	<div class="form-group">
+<cfoutput>
+	<div class="form-group row">
 		<div class="btn-group btn-breadcrumb custom-breadcrumbs">
 	    <a class="btn btn-default#getItem() eq 'module'?' active':''#"><i class="fa fa-bar-chart-o"></i> #i18n.translate( 'dashboard' )#</a>
 	    <a class="btn btn-default#getItem() eq 'module'?' active':''#"><i class="fa fa-folder-o"></i> #i18n.translate( 'module' )#</a></a>

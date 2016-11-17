@@ -1,16 +1,5 @@
-Options +FollowSymlinks
 RewriteEngine On
-
-# exclude files from rewriting
 RewriteCond %{REQUEST_FILENAME} !-f
-# exclude directories from rewriting
 RewriteCond %{REQUEST_FILENAME} !-d
-# exclude static files
 RewriteCond %{REQUEST_URI} !^.*\.(bmp|css|gif|htc|html?|ico|jpe?g|js|pdf|png|swf|txt|xml)$
-
-# rewrite rules, NS skips rewrite rule for internal sub-requests
-# for FW/1, removes index.cfm from the URL
-RewriteRule ^(.*)$ /index.cfm/$1 [NS,L]
-
-# sends 404 to the same action as onMissingView
-ErrorDocument 404 /index.cfm?action=public:error.notfound
+RewriteRule ^(.*)$ index.cfm/$1 [NS]

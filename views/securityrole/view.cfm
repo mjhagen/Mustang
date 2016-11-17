@@ -4,7 +4,7 @@
 
 <cfset local.iconTrue = '<i class="fa fa-check-circle-o" style="color:green;"></i>' />
 <cfset local.iconFalse = '<i class="fa fa-circle-o" style="color:red;"></i>' />
-<cfset local.privileges = "view,change,delete" />
+<cfset local.privileges = "create,view,change,delete,execute" />
 
 <cfsavecontent variable="local.formappend"><cfoutput>
   <div class="panel panel-default">

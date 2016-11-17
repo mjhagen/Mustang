@@ -1,6 +1,7 @@
 <cfparam name="local.namePrepend" default="" />
 <cfparam name="local.column" default="#{}#" />
 <cfparam name="local.column.name" default="" />
+<cfparam name="local.inlist" default=false />
 
 <cfif isNull( local.column ) or not isStruct( local.column ) or not structCount( local.column )><cfexit /></cfif>
 
@@ -22,8 +23,7 @@
         isSimpleValue( local.column.data.entityName ) and
         len( trim( local.column.data.fieldType )) and
         len( trim( local.column.data.saved )) and
-        len( trim( local.column.data.entityName ))
-  >
+        len( trim( local.column.data.entityName ))>
     <cfswitch expression="#local.column.data.fieldType#">
       <cfcase value="many-to-one">
         <cfset local.val = entityLoadByPK( local.column.data.entityName, local.column.data.saved ) />
@@ -34,7 +34,7 @@
 
 <cfoutput>
   <cfif not isNull( local.val )>
-    <div class="form-control-static">
+    <div#inlist?'':' class="form-control-static"'#>
       <!--- column --->
       <cfif isSimpleValue( local.val )>
         <cfif structKeyExists( local.column.data, "listmask" )>
@@ -82,11 +82,20 @@
             <cfset local.val = i18n.translate( local.val ) />
           </cfif>
           #local.val#
-        <cfelseif isDate( local.val ) and
-          structKeyExists( local.column.data, "ORMType" ) and
-          local.column.data.ORMType eq "timestamp">
-          #lsDateFormat( local.val, i18n.translate( 'defaults-dateformat-small' ))#<br />
-          #lsTimeFormat( local.val, 'HH:mm:ss' )#
+        <cfelseif isDate( local.val ) and (
+            ( structKeyExists( local.column.data, "ORMType" ) and local.column.data.ORMType eq "timestamp" ) or
+            ( structKeyExists( local.column.data, "type" ) and (
+              local.column.data.type eq "timestamp" or
+              local.column.data.type eq "date"
+            ) )
+          )>
+
+          <cfif year( local.val ) gt 10000>
+            #i18n.translate( "infinite" )#
+          <cfelse>
+            #lsDateFormat( local.val, i18n.translate( 'defaults-dateformat-small' ))#<br />
+            #lsTimeFormat( local.val, 'HH:mm:ss' )#
+          </cfif>
         <cfelseif structKeyExists( local.column.data, "formfield" ) and
                   local.column.data.formfield eq "file">
           <a href="#buildURL( 'adminapi:crud.download?filename=' & local.val )#">#local.val#</a>
@@ -96,11 +105,11 @@
 
       <!--- to many --->
       <cfelseif isArray( local.val ) and arrayLen( local.val )>
-        #view( 'form/view/to-many', { val = local.val, column=local.column })#
+        #view( 'form/view/to-many', { val = local.val, column=local.column, inlist=local.inlist })#
 
       <!--- to one --->
       <cfelseif isObject( local.val )>
-        #view( 'form/view/to-one', { val=local.val, column=local.column, formElementName=local.namePrepend & local.column.name })#
+        #view( 'form/view/to-one', { val=local.val, column=local.column, formElementName=local.namePrepend & local.column.name, inlist=local.inlist })#
 
       </cfif>
     </div>

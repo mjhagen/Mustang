@@ -4,7 +4,9 @@
   "showDebug" : true,
   "datasource" : "mustang",
   "paths" : {
-    "model" : "C:/Users/mjhagen/Dropbox/Projects/Mustang/model"
+    "bcrypt": "D:/Dropbox/Projects/thirdparty/bcrypt",
+    "fileUploads": "D:/Dropbox/Projects/ProjectsTemporaryFiles/files_mustang",
+    "model" : "D:/Dropbox/Projects/Mustang/model"
   },
   "nukescript" : "populate.sql"
 }

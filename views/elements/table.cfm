@@ -6,7 +6,7 @@
 <cfparam name="local.queryString" default="#{}#" />
 
 <cfoutput>
-  <table class="table table-striped">
+  <table class="table table-sm table-striped">
     <thead>
       <tr>
         <th width="45">&nbsp;</th>
@@ -37,14 +37,16 @@
             </cfif>
           </th>
         </cfloop>
-        <th class="col-md-2"></th>
+        <cfif len( local.lineactions )>
+          <th></th>
+        </cfif>
       </tr>
     </thead>
     <tbody>
       <cfif structKeyExists( local.queryString, 'offset' )>
         <cfset local.rowNr = local.queryString.offset + 1 />
       <cfelse>
-        <cfset local.rowNr = 1 />			
+        <cfset local.rowNr = 1 />
       </cfif>
       <cfloop array="#local.alldata#" index="local.data">
         <cfset local.params = {

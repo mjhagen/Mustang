@@ -12,12 +12,12 @@
     <h4>Upload a new image:</h4>
 
     <form role="form" method="post" enctype="multipart/form-data" action="<cfoutput>#buildURL('.upload')#</cfoutput>">
-      <div class="form-group">
+      <div class="form-group row">
         <label for="fileUpload">Image:</label>
         <input id="fileUpload" name="file" type="file" />
       </div>
 
-      <div class="form-group">
+      <div class="form-group row">
         <button type="submit">Upload</button>
       </div>
     </form>

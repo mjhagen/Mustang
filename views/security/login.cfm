@@ -19,19 +19,19 @@
           <form class="form-horizontal" action="#buildURL( ':security.dologin' )#" method="post">
             <input type="hidden" name="origin" value="#getSubsystem()#">
 
-            <div class="form-group">
+            <div class="form-group row">
               <label for="username" class="col-lg-4 control-label">#i18n.translate('username')#</label>
               <div class="col-lg-8">
                 <input type="text" class="form-control" name="username" id="username" placeholder="#i18n.translate('placeholder-username')#">
               </div>
             </div>
-            <div class="form-group">
+            <div class="form-group row">
               <label for="password" class="col-lg-4 control-label">#i18n.translate('password')#</label>
               <div class="col-lg-8">
                 <input type="password" class="form-control" name="password" id="password" placeholder="#i18n.translate('placeholder-password')#">
               </div>
             </div>
-            <div class="form-group">
+            <div class="form-group row">
               <div class="col-lg-offset-4 col-lg-8">
                 <button type="submit" class="btn btn-primary">#i18n.translate('log-in')#</button>
               </div>

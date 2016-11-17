@@ -10,7 +10,7 @@ component extends="basecfc.base"
   property name="view" ORMType="boolean" default="FALSE" inform="true" orderinform="3" editable="true" ininline="true" orderininline="3";
   property name="change" ORMType="boolean" default="FALSE" inform="true" orderinform="4" editable="true" ininline="true" orderininline="4";
   property name="delete" ORMType="boolean" default="FALSE" inform="true" orderinform="5" editable="true" ininline="true" orderininline="5";
-  property name="approve" ORMType="boolean" default="FALSE" inform="true" orderinform="6" editable="true" ininline="true" orderininline="6";
+  property name="execute" ORMType="boolean" default="FALSE" inform="true" orderinform="6" editable="true" ininline="true" orderininline="6";
 
   property name="securityrole" fieldtype="many-to-one" cfc="root.model.securityrole" FKColumn="securityroleid";
 

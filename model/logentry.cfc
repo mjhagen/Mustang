@@ -8,7 +8,7 @@ component extends="basecfc.base"
   property name="deleted" type="boolean" ORMType="boolean" default=false inapi=false;
   property name="sortorder" type="numeric" ORMType="integer" default=0;
 
-  property name="relatedEntity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inform=true orderinform=1 inlist=1;
+  property name="relatedEntity" fieldType="many-to-one" cfc="root.model.logged" FKColumn="entityid" inform=true orderinform=1 inlist=1 link=true;
   property name="logaction" fieldType="many-to-one" cfc="root.model.logaction" FKColumn="logactionid" inform=true orderinform=2 inlist=1;
   property name="savedState" length=4000 dataType="json" inform=true orderinform=5;
   property name="note" length=1024 inform=true orderinform=6 editable=true required=1 inlist=1;
@@ -34,10 +34,11 @@ component extends="basecfc.base"
       return this;
     }
 
+    writeLog( text = "Logging entry for #entityToLog.getId( )#", file = request.appName );
     var formData = {
       "dd" = now(),
       "ip" = cgi.remote_addr,
-      "relatedEntity" = entityToLog
+      "relatedEntity" = entityToLog.getId()
     };
 
     if( isDefined( "request.context.auth.userID" )) {
@@ -65,8 +66,18 @@ component extends="basecfc.base"
       };
     }
 
-    formData["savedState"] = deORM( newState );
+    formData[ "savedState" ] = deORM( newState );
 
-    return save( formData );
+    transaction {
+      var result = save( formData );
+    }
+
+    var e = result.getRelatedEntity( );
+
+    if ( !isNull( e ) ) {
+      writeLog( text = "Entry logged for #e.getId( )#", file = request.appName );
+    }
+
+    return result;
   }
 }

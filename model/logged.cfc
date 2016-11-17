@@ -14,6 +14,6 @@ component extends="basecfc.base"
   property name="updateDate" ORMType="timestamp";
   property name="updateIP" length=15;
 
-  property name="logEntries" singularName="logEntry" fieldType="one-to-many" cfc="root.model.logentry" FKColumn="entityid";
+  property name="logEntries" singularName="logEntry" fieldType="one-to-many" cfc="root.model.logentry" FKColumn="entityid" inapi=false;
 
 }

@@ -1,8 +1,8 @@
 <cfparam name="rc.subnav" default="" />
 
-<cfset filesMenuItemPointer = listFindNoCase( rc.subnav, "files" ) />
-<cfif filesMenuItemPointer>
-  <cfset rc.subnav = listDeleteAt( rc.subnav, filesMenuItemPointer ) />
+<cfset local.filesMenuItemPointer = listFindNoCase( rc.subnav, "files" ) />
+<cfif local.filesMenuItemPointer>
+  <cfset rc.subnav = listDeleteAt( rc.subnav, local.filesMenuItemPointer ) />
 </cfif>
 
 <cfoutput>
@@ -38,19 +38,19 @@
               ) and getSection() eq local.section>
           <ul class="nav nav-second-level">
             <cfif isSimpleValue( rc.subsubnav )>
-              <cfloop list="#rc.subsubnav#" index="subsubitem">
-                <li><a#( getfullyqualifiedaction() eq '#subsystem#:#section#.#subsubitem#' )?' class="active"':''# href="#buildURL('.#subsubitem#')#">#i18n.translate( '#subsystem#:#section#.#subsubitem#' )#</a></li>
+              <cfloop list="#rc.subsubnav#" index="local.subsubitem">
+                <li><a#( getfullyqualifiedaction() eq '#subsystem#:#section#.#local.subsubitem#' )?' class="active"':''# href="#buildURL('.#local.subsubitem#')#">#i18n.translate( '#subsystem#:#section#.#local.subsubitem#' )#</a></li>
               </cfloop>
             <cfelse>
-              <cfloop array="#rc.subsubnav#" index="subsubitem">
+              <cfloop array="#rc.subsubnav#" index="local.subsubitem">
                 <cfset local.active = true />
-                <cfloop collection="#subsubitem.querystring#" item="key">
-                  <cfif not structKeyExists( rc, key ) or not rc[key] eq subsubitem.querystring[key]>
+                <cfloop collection="#local.subsubitem.querystring#" item="local.key">
+                  <cfif not structKeyExists( rc, local.key ) or not rc[local.key] eq local.subsubitem.querystring[local.key]>
                     <cfset local.active = false />
                     <cfbreak />
                   </cfif>
                 </cfloop>
-                <li><a#local.active?' class="active"':''# href="#buildURL( action='.#subsubitem.action#', querystring=subsubitem.querystring)#">#subsubitem.label#</a></li>
+                <li><a#local.active?' class="active"':''# href="#buildURL( action='.#local.subsubitem.action#', querystring=local.subsubitem.querystring)#">#local.subsubitem.label#</a></li>
               </cfloop>
             </cfif>
           </ul>

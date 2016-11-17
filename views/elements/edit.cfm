@@ -20,17 +20,17 @@
 </cfif>
 
 <cfoutput>
-  <cfif getItem() eq "view" and getBeanFactory().getBean( "securityService" ).can( "change", local.entity )>
+  <cfif getItem() eq "view" and rc.auth.role.can( "change", local.entity )>
     <a class="pull-right btn btn-primary" href="#buildURL( '.edit?#local.entity#id=#rc["#local.entity#id"]#' )#">#i18n.translate('edit')#</a>
   </cfif>
 
   <cfif not local.modal>
     <ul class="nav nav-tabs">
-      <li class="active"><a href="##form-#local.entity#" data-toggle="tab">#i18n.translate( getItem())#</a></li>
+      <li class="nav-item"><a class="nav-link active" href="##form-#local.entity#" data-toggle="tab">#i18n.translate( getItem())#</a></li>
       <cfif structKeyExists( rc, "#local.entity#id" ) and local.canBeLogged>
         <cfset local.log = entityLoad( "logentry", { relatedEntity = local.data }, "dd DESC", { maxresults = 15 }) />
         <cfif isDefined( "local.log" ) and arrayLen( local.log )>
-          <li><a href="##changelog" data-toggle="tab">#i18n.translate('changelog')#</a></li>
+          <li class="nav-item"><a class="nav-link" href="##changelog" data-toggle="tab">#i18n.translate('changelog')#</a></li>
         </cfif>
       </cfif>
     </ul>
@@ -39,9 +39,17 @@
   </cfif>
 
   <div class="tab-pane active" id="form-#local.entity#">
-    <cfif not local.inline>
-      <form<cfif local.modal> action="javascript:void(0);"<cfelse> id="mainform" action="#buildURL('.save')#" method="post"</cfif> class="form-horizontal">
-    </cfif>
+    <div class="container">
+      <cfif not local.inline>
+        <form
+          <cfif local.modal>
+            action="javascript:void(0);"
+          <cfelse>
+            id="mainform" action="#buildURL('.save')#" method="post"
+          </cfif>
+        >
+      </cfif>
+
       <cfif not local.modal>
         <input type="hidden" name="submitButton" value="" />
       </cfif>
@@ -70,9 +78,9 @@
       <cfset local.i = 0 />
       <cfloop array="#local.columns#" index="local.column">
         <cfset local.i++ />
-        <cfset local.sharedClass = "form-group" />
+        <cfset local.sharedClass = "form-group row" />
         <cfset local.editableCheck = false />
-        <cfif structKeyExists( local.column, "editable" ) and local.column.editable and local.editable and getBeanFactory().getBean( "securityService" ).can( "change", local.entity )>
+        <cfif structKeyExists( local.column, "editable" ) and local.column.editable and local.editable and rc.auth.role.can( "change", local.entity )>
           <cfset local.editableCheck = true />
         </cfif>
         <cfif not local.editableCheck>
@@ -82,25 +90,27 @@
           <cfset local.sharedClass = listAppend( local.sharedClass, "affected", " " ) />
           <cfset local.sharedClass = listAppend( local.sharedClass, local.column.name, " " ) />
         </cfif>
+
         <div class="#local.sharedClass#">
           <cfif structKeyExists( local.column, 'ORMType' ) and local.column.ORMType eq "boolean">
-            <label for="#local.column.name#" class="col-lg-3 control-label"></label>
+            <label for="#local.column.name#" class="col-sm-3 col-form-label"></label>
           <cfelse>
-            <label for="#local.column.name#" class="col-lg-3 control-label" title="#local.column.name#">
+            <label for="#local.column.name#" class="col-sm-3 col-form-label" title="#local.column.name#">
               #i18n.translate( local.column.name )#
               <cfif isDefined( "local.column.hint" )>
                 <i class="fa fa-question-circle" title="#i18n.translate( 'hint-#local.entity#-#local.column.name#' )#"></i>
               </cfif>
             </label>
           </cfif>
-          <div class="col-lg-9">
+
+          <div class="col-sm-9">
             <cfif local.editableCheck>
               <cfset local.fieldparameters = {
                 "column"      = local.column,
                 "i"           = local.i,
                 "namePrepend" = local.namePrepend
               } />
-              #view( "elements/fieldedit", local.fieldparameters )#
+              #view( "form/edit/field", local.fieldparameters )#
             <cfelse>
               <cfset local.fieldparameters = {
                 "data"    = local.data,
@@ -109,7 +119,12 @@
                               "name" = local.column.name
                             }
               } />
-              #view( "elements/fielddisplay", local.fieldparameters )#
+              <cfset local.customView = "#getSection( )#/form/view/#local.column.name#" />
+              <cfif cachedFileExists( parseViewOrLayoutPath( local.customView, "view" ) )>
+                #view( local.customView, local.fieldparameters )#
+              <cfelse>
+                #view( "form/view/field", local.fieldparameters )#
+              </cfif>
             </cfif>
           </div>
         </div>
@@ -142,9 +157,9 @@
                       namePrepend="logentry_",
                       idPrepend="logentry_"
                     } />
-                    <div class="form-group">
+                    <div class="form-group row">
                       <label for="logentry_#local.logField#" class="col-lg-3 control-label">#i18n.translate( 'logentry_' & local.logField )#</label>
-                      <div class="col-lg-9">#view("elements/fieldedit",local.fieldEditProperties)#</div>
+                      <div class="col-lg-9">#view(":elements/fieldedit",local.fieldEditProperties)#</div>
                     </div>
                   </cfloop>
                 </div>
@@ -153,8 +168,8 @@
           </div>
         </cfif>
 
-        <div class="form-group">
-          <div class="col-lg-offset-3 col-lg-9">
+        <div class="form-group row">
+          <div class="offset-lg-3 col-lg-9">
             <cfif local.editable>
               <button type="button" class="btn btn-default cancel-button">#i18n.translate('cancel')#</button>
               <cfset local.submitButtons = [
@@ -171,7 +186,7 @@
                 <cfif len( trim( local.submitButton.modal ) )>
                   <a data-toggle="modal" href="##confirm#local.submitButton.value#" data-name="#local.submitButton.value#" class="btn btn-primary #local.submitButton.value#-button" data-style="expand-right">#i18n.translate( local.submitButton.value )#</a>
                   <button type="submit" class="hidden" data-name="#local.submitButton.value#"></button>
-                  #view( "elements/modal",{name=local.submitButton.modal,yeslink=''})#
+                  #view( ":elements/modal",{name=local.submitButton.modal,yeslink=''})#
                 <cfelse>
                   <button type="submit" data-name="#local.submitButton.value#" class="btn btn-primary #local.submitButton.value#-button" data-style="expand-right"><span class="ladda-label">#i18n.translate( local.submitButton.value )#</span></button>
                 </cfif>
@@ -187,26 +202,26 @@
             <hr />
 
             <cfif local.data.getDeleted() eq 1>
-              <div class="form-group">
-                <div class="col-lg-offset-3 col-lg-9">
+              <div class="form-group row">
+                <div class="offset-lg-3 col-lg-9">
                   <a data-toggle="modal" href="##confirmrestore" class="btn btn-success">#i18n.translate('btn-#local.entity#.restore')#</a>
                 </div>
               </div>
-              #view( "elements/modal",{name="restore",yeslink=buildURL('.restore','?#local.entity#id=#rc[local.entity&'id']#')})#
+              #view( ":elements/modal",{name="restore",yeslink=buildURL('.restore','?#local.entity#id=#rc[local.entity&'id']#')})#
             <cfelse>
-              <div class="form-group">
-                <div class="col-lg-offset-3 col-lg-9">
+              <div class="form-group row">
+                <div class="offset-lg-3 col-lg-9">
                   <a data-toggle="modal" href="##confirmdelete" class="btn btn-danger">#i18n.translate('btn-#local.entity#.delete')#</a>
                 </div>
               </div>
-              #view( "elements/modal",{name="delete",yeslink=buildURL('.delete','?#local.entity#id=#rc[local.entity&'id']#')})#
+              #view( ":elements/modal",{name="delete",yeslink=buildURL('.delete','?#local.entity#id=#rc[local.entity&'id']#')})#
             </cfif>
           </cfif>
 
-          <cfif local.data.hasProperty( 'createDate' ) and isDate( local.data.getCreateDate())>
+          <cfif local.data.propertyExists( 'createDate' ) and isDate( local.data.getCreateDate())>
             <small class="footnotes">
               #i18n.translate( 'created' )#:
-              <cfif local.data.hasProperty( 'createContact' )>
+              <cfif local.data.propertyExists( 'createContact' )>
                 <cfset local.creator = local.data.getCreateContact() />
                 <cfif isDefined( "local.creator" )>
                   #i18n.translate('created-by')#: <a href="mailto:#local.creator.getEmail()#">#local.creator.getFullname()#</a>
@@ -217,7 +232,7 @@
               <cfif isDate(local.data.getUpdateDate()) and dateDiff( 's', local.data.getCreateDate(), local.data.getUpdateDate()) gt 1>
                 <br />
                 #i18n.translate( 'updated' )#:
-                <cfif local.data.hasProperty( 'updateContact' )>
+                <cfif local.data.propertyExists( 'updateContact' )>
                   <cfset local.updater = local.data.getUpdateContact() />
                   <cfif isDefined( "local.updater" )>
                     #i18n.translate('updated-by')#: <a href="mailto:#local.updater.getEmail()#">#local.updater.getFullname()#</a>
@@ -230,18 +245,21 @@
           </cfif>
         </cfif>
       </cfif>
+
       <cfif not local.modal>
         <div id="inlineedit-result"></div>
       </cfif>
-    <cfif not local.inline>
-      </form>
-    </cfif>
+
+      <cfif not local.inline>
+        </form>
+      </cfif>
+    </div>
   </div>
 
   <cfif not local.modal>
     <cfif structKeyExists( rc, "#local.entity#id" ) and local.canBeLogged>
       <cfif isDefined( "local.log" ) and arrayLen( local.log )>
-        <div class="tab-pane" id="changelog">#view( 'elements/changelog', { activity = local.log, linkToEntity = false, notesInline = true })#</div>
+        <div class="tab-pane" id="changelog">#view( ':elements/changelog', { activity = local.log, linkToEntity = false, notesInline = true })#</div>
       </cfif>
     </cfif>
 
