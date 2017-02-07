@@ -1,0 +1,3 @@
+[submodule "webroot/cfimage"]
+	path = webroot/cfimage
+	url = https://github.com/mjhagen/fw0-cfimage.git
