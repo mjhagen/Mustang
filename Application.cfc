@@ -1,6 +1,8 @@
 component extends="framework.one" {
   request.context.startTime = getTickCount();
 
+  fixUrl( "" ); // <-- enter main URL in there
+
   // set tihs to true during updates:
   downForMaintenance = false;
 
@@ -286,5 +288,43 @@ component extends="framework.one" {
     structAppend( to, from );
 
     return to;
+  }
+
+  private void function fixUrl( string goHere = "" ) {
+    if ( !len( trim( goHere ) ) ) {
+      return;
+    }
+
+    var goSecure = true;
+    var isSecure = cgi.server_port_secure != '0';
+
+    if ( cgi.server_name contains 'cvsdev' ) {
+      goHere = cgi.server_name;
+      if ( cgi.server_name contains '.dev' ) {
+        goSecure = false;
+      }
+    }
+
+    if ( cgi.server_name != goHere || ( goSecure && !isSecure ) ) {
+      var qs = cgi.query_string;
+      var sn = cgi.script_name;
+
+      if ( left( qs, 4 ) == "404;" ) {
+        var originalUrl = listRest( qs, ";" );
+        var matcher = reFindNoCase( "^http[s]?:\/\/[\w.:]+(.*)$", originalUrl, 1, true );
+        if ( arrayLen( matcher.pos ) > 1 ) {
+          var parsedUrl = mid( originalUrl, matcher.pos[ 2 ], matcher.len[ 2 ] );
+          var sn = listFirst( parsedUrl, "?" );
+          var qs = listRest( parsedUrl, "?" );
+        }
+      }
+
+      var relocateonce = 'http' & ( goSecure ? 's' : '' ) &
+                          ( '://' & goHere ) &
+                          ( sn == '/index.cfm' ? '/' : sn ) &
+                          ( len( trim( qs ) ) ? '?' & qs : '' );
+
+      location( relocateonce, false, 301 );
+    }
   }
 }
