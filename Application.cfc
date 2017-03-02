@@ -1,7 +1,7 @@
 component extends="framework.one" {
   request.context.startTime = getTickCount();
 
-  fixUrl( "" ); // <-- enter main URL in there
+  fixUrl( "mstng.info", false ); // <-- enter main URL in there and whether or not to use SSL
 
   // set tihs to true during updates:
   downForMaintenance = false;
@@ -290,12 +290,11 @@ component extends="framework.one" {
     return to;
   }
 
-  private void function fixUrl( string goHere = "" ) {
+  private void function fixUrl( string goHere = "", boolean goSecure = false ) {
     if ( !len( trim( goHere ) ) ) {
       return;
     }
 
-    var goSecure = true;
     var isSecure = cgi.server_port_secure != '0';
 
     if ( cgi.server_name contains 'cvsdev' ) {
